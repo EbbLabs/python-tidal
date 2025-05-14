@@ -448,6 +448,12 @@ def test_get_track_radio_limit_100(session):
     assert len(similar_tracks) == 100
 
 
+def test_get_radio_mix(session):
+    track = session.track(12445712)
+    radio = track.get_radio_mix()
+    assert radio.id == "001c2cbc32b5b7c17f8c0aa55d9541"
+
+
 def test_get_stream_bts(session):
     track = session.track(77646170)  # Beck: Sea Change, Track: The Golden Age
     # Set session as BTS type (i.e. low_320k/HIGH Quality)

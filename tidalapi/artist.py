@@ -28,6 +28,8 @@ from typing_extensions import NoReturn
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 from tidalapi.types import JsonObj
 
+from . import mix
+
 if TYPE_CHECKING:
     from tidalapi.album import Album
     from tidalapi.media import Track, Video
@@ -241,6 +243,16 @@ class Artist:
                 parse=self.session.parse_track,
             ),
         )
+
+    def get_radio_mix(self) -> mix.Mix:
+        """Queries TIDAL for the artist radio, which is a mix of tracks that are similar
+        to what the artist makes.
+
+        :return: A :class:`Mix <tidalapi.mix.Mix>`
+        """
+        json = self.request.request("GET", f"artists/{self.id}/mix").json()
+
+        return self.session.mix(json.get("id"))
 
     def items(self) -> List[NoReturn]:
         """The artist page does not supply any items. This only exists for symmetry with

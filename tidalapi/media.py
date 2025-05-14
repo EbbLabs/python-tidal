@@ -51,6 +51,8 @@ from tidalapi.exceptions import (
 )
 from tidalapi.types import JsonObj
 
+from . import mix
+
 
 class Quality(str, Enum):
     low_96k: str = "LOW"
@@ -406,6 +408,16 @@ class Track(Media):
             tracks = self.requests.map_json(json_obj, parse=self.session.parse_track)
             assert isinstance(tracks, list)
             return cast(List["Track"], tracks)
+
+    def get_radio_mix(self) -> mix.Mix:
+        """Queries TIDAL for the track radio, which is a mix of tracks that are similar
+        to this track.
+
+        :return: A :class:`Mix <tidalapi.mix.Mix>`
+        """
+        json = self.request.request("GET", f"tracks/{self.id}/mix").json()
+
+        return self.session.mix(json.get("id"))
 
     def get_stream(self) -> "Stream":
         """Retrieves the track streaming object, allowing for audio transmission.

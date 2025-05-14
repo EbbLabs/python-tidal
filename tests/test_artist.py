@@ -140,6 +140,12 @@ def test_get_radio(session):
     assert radio[0].artist.name == artist.name
 
 
+def test_get_radio_mix(session):
+    artist = session.artist(3514310)
+    radio = artist.get_radio_mix()
+    assert radio.id == "000038b3b74d5ce3a17b43a36d62bb"
+
+
 def test_artist_image(session):
     artist = session.artist(4822757)
     verify_image_cover(session, artist, [160, 320, 480, 750])
