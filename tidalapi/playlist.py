@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
 
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
-from tidalapi.types import JsonObj
+from tidalapi.types import ItemOrder, JsonObj, OrderDirection
 from tidalapi.user import LoggedInUser
 
 if TYPE_CHECKING:
@@ -159,14 +159,30 @@ class Playlist:
         self.parse(json_obj)
         return copy.copy(self.factory())
 
-    def tracks(self, limit: Optional[int] = None, offset: int = 0) -> List["Track"]:
+    def tracks(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        order: Optional[ItemOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["Track"]:
         """Gets the playlists' tracks from TIDAL.
 
         :param limit: The amount of items you want returned.
         :param offset: The index of the first item you want included.
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the playlist tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A list of :class:`Tracks <.Track>`
         """
-        params = {"limit": limit, "offset": offset}
+        params = {
+            "limit": limit,
+            "offset": offset,
+        }
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         request = self.request.request(
             "GET", self._base_url % self.id + "/tracks", params=params
         )
@@ -177,14 +193,27 @@ class Playlist:
             )
         )
 
-    def items(self, limit: int = 100, offset: int = 0) -> List[Union["Track", "Video"]]:
+    def items(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        order: Optional[ItemOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List[Union["Track", "Video"]]:
         """Fetches up to the first 100 items, including tracks and videos.
 
         :param limit: The amount of items you want, up to 100.
         :param offset: The index of the first item you want returned
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the playlist items. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A list of :class:`Tracks<.Track>` and :class:`Videos<.Video>`
         """
         params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         request = self.request.request(
             "GET", self._base_url % self.id + "/items", params=params
         )

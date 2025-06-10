@@ -27,7 +27,16 @@ from typing import TYPE_CHECKING, List, Optional, Union, cast
 from urllib.parse import urljoin
 
 from tidalapi.exceptions import ObjectNotFound
-from tidalapi.types import JsonObj
+from tidalapi.types import (
+    AlbumOrder,
+    ArtistOrder,
+    ItemOrder,
+    JsonObj,
+    MixOrder,
+    OrderDirection,
+    PlaylistOrder,
+    VideoOrder,
+)
 
 if TYPE_CHECKING:
     from tidalapi.album import Album
@@ -448,12 +457,27 @@ class Favorites:
             params=params,
         ).ok
 
-    def artists(self, limit: Optional[int] = None, offset: int = 0) -> List["Artist"]:
+    def artists(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        order: Optional[ArtistOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["Artist"]:
         """Get the users favorite artists.
 
+        :param limit: Optional; The amount of artists you want returned.
+        :param offset: The index of the first artist you want included.
+        :param order: Optional; A :class:`ArtistOrder` describing the ordering type when returning the user favorite artists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.artist.Artist` objects containing the favorite artists.
         """
         params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         return cast(
             List["Artist"],
             self.requests.map_request(
@@ -463,12 +487,27 @@ class Favorites:
             ),
         )
 
-    def albums(self, limit: Optional[int] = None, offset: int = 0) -> List["Album"]:
+    def albums(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        order: Optional[AlbumOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["Album"]:
         """Get the users favorite albums.
 
+        :param limit: Optional; The amount of albums you want returned.
+        :param offset: The index of the first album you want included.
+        :param order: Optional; A :class:`AlbumOrder` describing the ordering type when returning the user favorite albums. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.album.Album` objects containing the favorite albums.
         """
         params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         return cast(
             List["Album"],
             self.requests.map_request(
@@ -477,13 +516,26 @@ class Favorites:
         )
 
     def playlists(
-        self, limit: Optional[int] = None, offset: int = 0
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        order: Optional[PlaylistOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
     ) -> List["Playlist"]:
         """Get the users favorite playlists.
 
+        :param limit: Optional; The amount of playlists you want returned.
+        :param offset: The index of the first playlist you want included.
+        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite playlists.
         """
         params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         return cast(
             List["Playlist"],
             self.requests.map_request(
@@ -497,23 +549,22 @@ class Favorites:
         self,
         limit: Optional[int] = None,
         offset: int = 0,
-        order: str = "NAME",
-        order_direction: str = "ASC",
+        order: Optional[ItemOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
     ) -> List["Track"]:
         """Get the users favorite tracks.
 
         :param limit: Optional; The amount of items you want returned.
         :param offset: The index of the first item you want included.
-        :param order: A :class:`str` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
-        :param order_direction: A :class:`str` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.media.Track` objects containing all of the favorite tracks.
         """
-        params = {
-            "limit": limit,
-            "offset": offset,
-            "order": order,
-            "orderDirection": order_direction,
-        }
+        params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
 
         return cast(
             List["Track"],
@@ -522,24 +573,57 @@ class Favorites:
             ),
         )
 
-    def videos(self) -> List["Video"]:
+    def videos(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        order: Optional[VideoOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["Video"]:
         """Get the users favorite videos.
 
+        :param limit: Optional; The amount of videos you want returned.
+        :param offset: The index of the first video you want included.
+        :param order: Optional; A :class:`VideoOrder` describing the ordering type when returning the user favorite videos. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.media.Video` objects containing all the favorite videos
         """
+        params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         return cast(
             List["Video"],
-            self.requests.get_items(
-                f"{self.base_url}/videos", parse=self.session.parse_media
+            self.requests.map_request(
+                f"{self.base_url}/videos",
+                params=params,
+                parse=self.session.parse_media,
             ),
         )
 
-    def mixes(self, limit: Optional[int] = 50, offset: int = 0) -> List["MixV2"]:
+    def mixes(
+        self,
+        limit: Optional[int] = 50,
+        offset: int = 0,
+        order: Optional[MixOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["MixV2"]:
         """Get the users favorite mixes & radio.
 
+        :param limit: Optional; The amount of mixes you want returned.
+        :param offset: The index of the first mix you want included.
+        :param order: Optional; A :class:`MixOrder` describing the ordering type when returning the user favorite mixes. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.media.Mix` objects containing the user favourite mixes & radio
         """
         params = {"limit": limit, "offset": offset}
+        if order:
+            params["order"] = order.value
+        if order_direction:
+            params["orderDirection"] = order_direction.value
+
         return cast(
             List["MixV2"],
             self.requests.map_request(
