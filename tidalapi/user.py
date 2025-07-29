@@ -657,7 +657,7 @@ class Favorites:
         if order_direction:
             params["orderDirection"] = order_direction.value
 
-        endpoint = "my-collection/playlists/folders"
+        endpoint = "my-collection/playlists"
         return cast(
             List["Playlist"],
             self.session.request.map_request(
