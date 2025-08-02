@@ -1094,7 +1094,19 @@ class Session:
 
         :return: A :class:`.Page` object with the :class:`.PageCategory` list from the home page
         """
-        return self.page.get("pages/home")
+        params = {}
+        params["deviceType"] = "BROWSER"
+        params["countryCode"] = "IT"
+        params["locale"] = "en_US"
+        params["platform"] = "WEB"
+
+        json_obj = self.request.request(
+            "GET",
+            "home/feed/static",
+            base_url=self.config.api_v2_location,
+            params=params,
+        ).json()
+        return self.page.parseV2(json_obj)
 
     def explore(self) -> page.Page:
         """

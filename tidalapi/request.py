@@ -85,6 +85,8 @@ class Requests(object):
         if not headers:
             headers = {}
 
+        headers["x-tidal-client-version"] = "2025.7.16"
+
         if "User-Agent" not in headers:
             headers["User-Agent"] = self.user_agent
 
