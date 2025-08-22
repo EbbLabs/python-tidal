@@ -87,10 +87,11 @@ class Album:
         if self.id:
             try:
                 request = self.request.request("GET", "albums/%s" % self.id)
-            except ObjectNotFound:
-                raise ObjectNotFound("Album not found")
-            except TooManyRequests:
-                raise TooManyRequests("Album unavailable")
+            except ObjectNotFound as e:
+                e.args = ("Album with id %s not found" % self.id,)
+            except TooManyRequests as e:
+                e.args = ("Album unavailable",)
+                raise e
             else:
                 self.request.map_json(request.json(), parse=self.parse)
 
@@ -320,8 +321,9 @@ class Album:
             request = self.request.request("GET", "albums/%s/similar" % self.id)
         except ObjectNotFound:
             raise MetadataNotAvailable("No similar albums exist for this album")
-        except TooManyRequests:
-            raise TooManyRequests("Similar artists unavailable")
+        except TooManyRequests as e:
+            e.args = ("Similar artists unavailable",)
+            raise e
         else:
             albums = self.request.map_json(
                 request.json(), parse=self.session.parse_album

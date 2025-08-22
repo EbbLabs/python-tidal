@@ -34,7 +34,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from tidalapi.exceptions import ObjectNotFound, TooManyRequests
+from tidalapi.session import from_http_error
 from tidalapi.types import JsonObj
 
 log = logging.getLogger(__name__)
@@ -151,26 +151,13 @@ class Requests(object):
         log.debug("request: %s", request.request.url)
         try:
             request.raise_for_status()
-        except Exception as e:
+        except requests.HTTPError as e:
             log.info("Request resulted in exception {}".format(e))
             self.latest_err_response = request
-            if request.content:
-                resp = request.json()
-                # Make sure request response contains the detailed error message
-                if "errors" in resp:
-                    log.debug("Request response: '%s'", resp["errors"][0]["detail"])
-                elif "userMessage" in resp:
-                    log.debug("Request response: '%s'", resp["userMessage"])
-                else:
-                    log.debug("Request response: '%s'", json.dumps(resp))
-
-            if request.status_code and request.status_code == 404:
-                raise ObjectNotFound
-            elif request.status_code and request.status_code == 429:
-                raise TooManyRequests
+            if err := from_http_error(e):
+                raise err from e
             else:
-                # raise last error, usually HTTPError
-                raise
+                raise  # re raise last error, usually HTTPError
         return request
 
     def get_latest_err_response(self) -> dict:

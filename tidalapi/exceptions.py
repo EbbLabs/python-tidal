@@ -1,46 +1,86 @@
-class AuthenticationError(Exception):
+from __future__ import annotations
+
+import json
+import logging
+
+from requests import HTTPError
+
+log = logging.getLogger(__name__)
+
+
+class TidalAPIError(Exception):
     pass
 
 
-class AssetNotAvailable(Exception):
+class AuthenticationError(TidalAPIError):
     pass
 
 
-class TooManyRequests(Exception):
+class AssetNotAvailable(TidalAPIError):
     pass
 
 
-class URLNotAvailable(Exception):
+class TooManyRequests(TidalAPIError):
+    retry_after: int
+
+    def __init__(self, message: str = "Too many requests", retry_after: int = -1):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class URLNotAvailable(TidalAPIError):
     pass
 
 
-class StreamNotAvailable(Exception):
+class StreamNotAvailable(TidalAPIError):
     pass
 
 
-class MetadataNotAvailable(Exception):
+class MetadataNotAvailable(TidalAPIError):
     pass
 
 
-class ObjectNotFound(Exception):
+class ObjectNotFound(TidalAPIError):
     pass
 
 
-class UnknownManifestFormat(Exception):
+class UnknownManifestFormat(TidalAPIError):
     pass
 
 
-class ManifestDecodeError(Exception):
+class ManifestDecodeError(TidalAPIError):
     pass
 
 
-class MPDNotAvailableError(Exception):
+class MPDNotAvailableError(TidalAPIError):
     pass
 
 
-class InvalidISRC(Exception):
+class InvalidISRC(TidalAPIError):
     pass
 
 
-class InvalidUPC(Exception):
+class InvalidUPC(TidalAPIError):
     pass
+
+
+def from_http_error(http_error: HTTPError) -> TidalAPIError | None:
+    response = http_error.response
+
+    if response.content:
+        json_data = response.json()
+        # Make sure request response contains the detailed error message
+        if "errors" in json_data:
+            log.debug("Request response: '%s'", json_data["errors"][0]["detail"])
+        elif "userMessage" in json_data:
+            log.debug("Request response: '%s'", json_data["userMessage"])
+        else:
+            log.debug("Request response: '%s'", json.dumps(json_data))
+
+    elif response.status_code == 404:
+        return ObjectNotFound("Object not found")
+    elif response.status_code == 429:
+        retry_after = int(response.headers.get("Retry-After", -1))
+        return TooManyRequests("Too many requests", retry_after=retry_after)
+
+    return None

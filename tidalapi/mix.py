@@ -95,10 +95,12 @@ class Mix:
 
         try:
             request = self.request.request("GET", "pages/mix", params=params)
-        except ObjectNotFound:
-            raise ObjectNotFound("Mix not found")
-        except TooManyRequests:
-            raise TooManyRequests("Mix unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Mix with id %s not found" % mix_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Mix unavailable",)
+            raise e
         else:
             result = self.session.parse_page(request.json())
             assert not isinstance(result, list)
@@ -215,10 +217,12 @@ class MixV2:
         params = {"mixId": mix_id, "deviceType": "BROWSER"}
         try:
             request = self.request.request("GET", "pages/mix", params=params)
-        except ObjectNotFound:
-            raise ObjectNotFound("Mix not found")
-        except TooManyRequests:
-            raise TooManyRequests("Mix unavailable")
+        except ObjectNotFound as e:
+            e.args = ("Mix with id %s not found" % mix_id,)
+            raise e
+        except TooManyRequests as e:
+            e.args = ("Mix unavailable",)
+            raise e
         else:
             result = self.session.parse_page(request.json())
             assert not isinstance(result, list)

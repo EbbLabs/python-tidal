@@ -64,10 +64,12 @@ class Artist:
         if self.id:
             try:
                 request = self.request.request("GET", "artists/%s" % self.id)
-            except ObjectNotFound:
-                raise ObjectNotFound("Artist not found")
-            except TooManyRequests:
-                raise TooManyRequests("Artist unavailable")
+            except ObjectNotFound as e:
+                e.args = ("Artist with id %s not found" % self.id,)
+                raise e
+            except TooManyRequests as e:
+                e.args = ("Artist unavailable",)
+                raise e
             else:
                 self.request.map_json(request.json(), parse=self.parse_artist)
 
@@ -242,8 +244,9 @@ class Artist:
             )
         except ObjectNotFound:
             raise MetadataNotAvailable("Track radio not available for this track")
-        except TooManyRequests:
-            raise TooManyRequests("Track radio unavailable")
+        except TooManyRequests as e:
+            e.args = ("Track radio unavailable",)
+            raise e
         else:
             json_obj = request.json()
             radio = self.request.map_json(json_obj, parse=self.session.parse_track)
@@ -262,8 +265,9 @@ class Artist:
             request = self.request.request("GET", "artists/%s/mix" % self.id)
         except ObjectNotFound:
             raise MetadataNotAvailable("Artist radio not available for this artist")
-        except TooManyRequests:
-            raise TooManyRequests("Artist radio unavailable")
+        except TooManyRequests as e:
+            e.args = ("Artist radio unavailable",)
+            raise e
         else:
             json_obj = request.json()
             return self.session.mix(json_obj.get("id"))

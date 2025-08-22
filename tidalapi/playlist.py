@@ -81,10 +81,12 @@ class Playlist:
         if playlist_id:
             try:
                 request = self.request.request("GET", self._base_url % self.id)
-            except ObjectNotFound:
-                raise ObjectNotFound("Playlist not found")
-            except TooManyRequests:
-                raise TooManyRequests("Playlist unavailable")
+            except ObjectNotFound as e:
+                e.args = ("Playlist with id %s not found" % playlist_id,)
+                raise e
+            except TooManyRequests as e:
+                e.args = ("Playlist unavailable",)
+                raise e
             else:
                 self._etag = request.headers["etag"]
                 self.parse(request.json())
@@ -370,9 +372,10 @@ class Folder:
                         return
                 raise ObjectNotFound
             except ObjectNotFound:
-                raise ObjectNotFound(f"Folder not found")
-            except TooManyRequests:
-                raise TooManyRequests("Folder unavailable")
+                raise ObjectNotFound("Folder not found")
+            except TooManyRequests as e:
+                e.args = ("Folder unavailable",)
+                raise e
 
     def _reparse(self) -> None:
         params = {
