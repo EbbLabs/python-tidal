@@ -618,7 +618,7 @@ class Favorites:
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` :class:`~tidalapi.album.Album` objects containing the favorite albums.
         """
-        count = self.session.user.favorites.get_artists_count()
+        count = self.session.user.favorites.get_albums_count()
         return get_items(
             self.session.user.favorites.albums, count, order, order_direction
         )
