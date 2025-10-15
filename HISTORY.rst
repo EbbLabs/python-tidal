@@ -3,17 +3,20 @@
 History
 =======
 
-Upcoming
+v0.8.7
 --------
+* OAuth Client ID, secret updated - tehkillerbee_
+* Bugfix: `albums_paginated` using `get_artists_count` instead of `get_albums_count` - rafrombrc_
 * TooManyRequests now includes the retry_after header in its data. - semohr_
 * Added a central error class (TidalAPIError) to allow for unified error handling. - semohr_
 
 v0.8.6
 ------
-* Add support for get<track, album, artist, playlist>count(), Workers: Use get_*_count to get the actual number of items. - tehkillerbee_
+* Bugfix: Use get_*_count in workers to get the actual number of items. (Fixes #360) - tehkillerbee_
+* Feature: Add support for get<track, album, artist, playlist>count(), Workers: Use get_*_count to get the actual number of items. - tehkillerbee_
+* Feature: Get playlist tracks, items count. Get playlist tracks paginated. - tehkillerbee_
 * Only return warning if page itemtype (v2) is not implemented (Fixes: #362) - tehkillerbee_
 * Add legacy home endpoint for backwards compatibility - tehkillerbee_
-* Get playlist tracks, items count. Get playlist tracks paginated. - tehkillerbee_
 
 v0.8.5
 ------
@@ -248,7 +251,6 @@ v0.6.2
 * Add version tag for Track - Husky22_
 * Switch to netlify for documentation - morguldir_
 
-.. _semohr: https://github.com/semohr
 .. _morguldir: https://github.com/morguldir
 .. _Husky22: https://github.com/Husky22
 .. _ktnrg45: https://github.com/ktnrg45
@@ -278,4 +280,6 @@ v0.6.2
 .. _C0rn3j: https://github.com/C0rn3j
 .. _Nokse22: https://github.com/Nokse22
 .. _nilathedragon: https://github.com/nilathedragon
+.. _semohr: https://github.com/semohr
+.. _rafrombrc: https://github.com/rafrombrc
 

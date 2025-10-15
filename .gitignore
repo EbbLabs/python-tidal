@@ -87,3 +87,6 @@ prof/
 tidal*.json
 *.m3u8
 *.mpd
+
+# Local devtools
+devtools
