@@ -153,16 +153,12 @@ class Config:
 
         # OAuth Client Authorization
         self.client_id = base64.b64decode(
-            base64.b64decode(b"V214bmVWTnVhR3RpVnpVdw==")
-            + base64.b64decode(b"VjJ4a1RFMUhiRFJXUVQwOQ==")
+            base64.b64decode(b"WmxneVNuaGtiVzUw")
+            + base64.b64decode(b"V2xkTE1HbDRWQT09")
         ).decode("utf-8")
         self.client_secret = base64.b64decode(
-            base64.b64decode(
-                b"VFZVMWRVOVZSbTFTUlVaeFpVaEtibE5yV2t0WmEzUlBWakI0YkZGWQ=="
-            )
-            + base64.b64decode(
-                b"YkV4U01WcElZbFZzVDJSV2FGRlZSWGhKVm14b1FtUnVhRUphZWpBOQ=="
-            )
+            base64.b64decode(b"TVU1dU9VRm1SRUZxZUhKblNrWktZa3RPVjB4bFFY")
+            + base64.b64decode(b"bExSMVpIYlVsT2RWaFFVRXhJVmxoQmRuaEJaejA9")
         ).decode("utf-8")
 
         # If client_secret not supplied, fall back to client_id (matching original behavior)
