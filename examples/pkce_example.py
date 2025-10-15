@@ -37,8 +37,9 @@ session.audio_quality = Quality.hi_res_lossless
 album_id = "77646169"  # Beck / Sea Change               (Max quality: HI_RES_LOSSLESS FLAC, 24bit/192000Hz)
 album = session.album(album_id)
 res = album.get_audio_resolution()
-tracks = album.tracks()
+
 # list album tracks
+tracks = album.tracks()
 for track in tracks:
     print("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
     stream = track.get_stream()

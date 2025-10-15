@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tidalapi"
-version = "0.8.6"
+version = "0.8.7"
 description = "Unofficial API for TIDAL music streaming service."
 authors = ["Thomas Amland <thomas.amland@googlemail.com>"]
 maintainers = ["tehkillerbee <tehkillerbee@users.noreply.github.com>"]
@@ -30,6 +30,7 @@ typing-extensions = "^4.12.2"
 ratelimit = "^2.2.1"
 isodate = "^0.7.2"
 mpegdash = "^0.4.0"
+pyaes = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.3.0"
