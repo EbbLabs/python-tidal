@@ -45,6 +45,7 @@ from typing import (
 )
 from urllib.parse import parse_qs, urlencode, urlsplit
 
+import pyaes
 import requests
 from requests.exceptions import HTTPError
 
@@ -111,7 +112,6 @@ class Config:
     api_v1_location: str = "https://api.tidal.com/v1/"
     api_v2_location: str = "https://api.tidal.com/v2/"
     openapi_v2_location: str = "https://openapi.tidal.com/v2/"
-    api_token: str
     client_id: str
     client_secret: str
     image_url: str = "https://resources.tidal.com/images/%s/%ix%i.jpg"
@@ -151,65 +151,25 @@ class Config:
         else:
             self.item_limit = item_limit
 
-        self.api_token = eval("\x67\x6c\x6f\x62\x61\x6c\x73".encode("437"))()[
-            "\x5f\x5f\x6e\x61\x6d\x65\x5f\x5f".encode(
-                "".join(map(chr, [105, 105, 99, 115, 97][::-1]))
-            ).decode("".join(map(chr, [117, 116, 70, 95, 56])))
-        ]
-        self.api_token += "." + eval(
-            "\x74\x79\x70\x65\x28\x73\x65\x6c\x66\x29\x2e\x5f\x5f\x6e\x61\x6d\x65\x5f\x5f".encode(
-                "".join(map(chr, [105, 105, 99, 115, 97][::-1]))
-            ).decode(
-                "".join(map(chr, [117, 116, 70, 95, 56]))
+        # OAuth Client Authorization
+        self.client_id = base64.b64decode(
+            base64.b64decode(b"V214bmVWTnVhR3RpVnpVdw==")
+            + base64.b64decode(b"VjJ4a1RFMUhiRFJXUVQwOQ==")
+        ).decode("utf-8")
+        self.client_secret = base64.b64decode(
+            base64.b64decode(
+                b"VFZVMWRVOVZSbTFTUlVaeFpVaEtibE5yV2t0WmEzUlBWakI0YkZGWQ=="
             )
-        )
-        token = self.api_token
-        token = token[:8] + token[16:]
-        self.api_token = list(
-            (base64.b64decode("d3RjaThkamFfbHlhQnBKaWQuMkMwb3puT2ZtaXhnMA==").decode())
-        )
-        tok = "".join(([chr(ord(x) - 2) for x in token[-6:]]))
-        token2 = token
-        token = token[:9]
-        token += tok
-        tok2 = "".join(([chr(ord(x) - 2) for x in token[:-7]]))
-        token = token[8:]
-        token = tok2 + token
-        self.api_token = list(
-            (base64.b64decode("enJVZzRiWF9IalZfVm5rZ2MuMkF0bURsUGRvZzRldA==").decode())
-        )
-        for word in token:
-            self.api_token.remove(word)
-        self.api_token = "".join(self.api_token)
-        string = ""
-        save = False
-        if not isinstance(token2, str):
-            save = True
-            string = "".encode("ISO-8859-1")
-            token2 = token2.encode("ISO-8859-1")
-        tok = string.join(([chr(ord(x) + 24) for x in token2[:-7]]))
-        token2 = token2[8:]
-        token2 = tok + token2
-        tok2 = string.join(([chr(ord(x) + 23) for x in token2[-6:]]))
-        token2 = token2[:9]
-        token2 += tok2
-        self.client_id = list(
-            (
-                base64.b64decode(
-                    "VoxKgUt8aHlEhEZ5cYhKgVAucVp2hnOFUH1WgE5+QlY2"
-                    "dWtYVEptd2x2YnR0UDd3bE1scmM3MnNlND0="
-                ).decode("ISO-8859-1")
+            + base64.b64decode(
+                b"YkV4U01WcElZbFZzVDJSV2FGRlZSWGhKVm14b1FtUnVhRUphZWpBOQ=="
             )
-        )
-        if save:
-            token2.decode("ISO-8859-1").encode("utf-16")
-            self.client_id = [x.encode("ISO-8859-1") for x in self.client_id]
-        for word in token2:
-            self.client_id.remove(word)
-        self.client_id = "".join(self.client_id)
-        self.client_secret = self.client_id
-        self.client_id = self.api_token
-        # PKCE Authorization. We will keep the former `client_id` as a fallback / will only be used for non PCKE
+        ).decode("utf-8")
+
+        # If client_secret not supplied, fall back to client_id (matching original behavior)
+        if not self.client_secret and self.client_id:
+            self.client_secret = self.client_id
+
+        # PKCE Client Authorization. We will keep the former `client_id` as a fallback / will only be used for non PCKE
         # authorizations.
         self.client_unique_key = format(random.getrandbits(64), "02x")
         self.code_verifier = base64.urlsafe_b64encode(os.urandom(32))[:-1].decode(
