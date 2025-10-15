@@ -3,6 +3,10 @@
 History
 =======
 
+v0.8.8
+--------
+* Bugfix: OAuth Client ID, secret updated - tehkillerbee_
+
 v0.8.7
 --------
 * OAuth Client ID, secret updated - tehkillerbee_
