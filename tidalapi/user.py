@@ -167,8 +167,8 @@ class LoggedInUser(FetchedUser):
     ) -> List[Union["Playlist", "UserPlaylist"]]:
         """Get the (public) playlists created by the user.
 
-        :param limit: The index of the first item you want included.
-        :param offset: The amount of items you want returned.
+        :param limit: The number of items you want returned.
+        :param offset: The index of the first item you want included.
         :return: List of public playlists.
         """
         params = {"limit": limit, "offset": offset}
@@ -564,14 +564,14 @@ class Favorites:
 
     def artists(
         self,
-        limit: Optional[int] = None,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[ArtistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["Artist"]:
         """Get the users favorite artists.
 
-        :param limit: Optional; The amount of artists you want returned.
+        :param limit: The number of artist you want returned.
         :param offset: The index of the first artist you want included.
         :param order: Optional; A :class:`ArtistOrder` describing the ordering type when returning the user favorite artists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
@@ -625,14 +625,14 @@ class Favorites:
 
     def albums(
         self,
-        limit: Optional[int] = None,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[AlbumOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["Album"]:
         """Get the users favorite albums.
 
-        :param limit: Optional; The amount of albums you want returned.
+        :param limit: The number of albums you want returned.
         :param offset: The index of the first album you want included.
         :param order: Optional; A :class:`AlbumOrder` describing the ordering type when returning the user favorite albums. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
@@ -684,7 +684,7 @@ class Favorites:
 
     def playlists(
         self,
-        limit: Optional[int] = 50,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[PlaylistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
@@ -692,7 +692,7 @@ class Favorites:
         """Get the users favorite playlists (v2 endpoint), relative to the root folder
         This function is limited to 50 by TIDAL, requiring pagination.
 
-        :param limit: Optional; The number of playlists you want returned (Note: Cannot exceed 50)
+        :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
         :param offset: The index of the first playlist to fetch
         :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
@@ -728,7 +728,7 @@ class Favorites:
 
     def playlist_folders(
         self,
-        limit: Optional[int] = 50,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[PlaylistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
@@ -736,7 +736,7 @@ class Favorites:
     ) -> List["Folder"]:
         """Get a list of folders created by the user.
 
-        :param limit: Optional; The number of playlists you want returned (Note: Cannot exceed 50)
+        :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
         :param offset: The index of the first playlist folder to fetch
         :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
@@ -797,7 +797,7 @@ class Favorites:
 
         :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite tracks.
+        :return: A :class:`list` :class:`~tidalapi.media.Track` objects containing the favorite tracks.
         """
         count = self.session.user.favorites.get_tracks_count()
         return get_items(
@@ -806,15 +806,15 @@ class Favorites:
 
     def tracks(
         self,
-        limit: Optional[int] = None,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[ItemOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["Track"]:
         """Get the users favorite tracks.
 
-        :param limit: Optional; The amount of items you want returned.
-        :param offset: The index of the first item you want included.
+        :param limit: The number of tracks you want returned.
+        :param offset: The index of the first track you want included.
         :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` of :class:`~tidalapi.media.Track` objects containing all of the favorite tracks.
@@ -849,14 +849,14 @@ class Favorites:
 
     def videos(
         self,
-        limit: Optional[int] = None,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[VideoOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["Video"]:
         """Get the users favorite videos.
 
-        :param limit: Optional; The amount of videos you want returned.
+        :param limit: The number of videos you want returned.
         :param offset: The index of the first video you want included.
         :param order: Optional; A :class:`VideoOrder` describing the ordering type when returning the user favorite videos. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
@@ -879,14 +879,14 @@ class Favorites:
 
     def mixes(
         self,
-        limit: Optional[int] = 50,
+        limit: int = 50,
         offset: int = 0,
         order: Optional[MixOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["MixV2"]:
         """Get the users favorite mixes & radio.
 
-        :param limit: Optional; The amount of mixes you want returned.
+        :param limit: The number of mixes you want returned.
         :param offset: The index of the first mix you want included.
         :param order: Optional; A :class:`MixOrder` describing the ordering type when returning the user favorite mixes. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
