@@ -847,6 +847,22 @@ class Favorites:
         json_obj = self.requests.map_request(f"{self.base_url}/tracks", params=params)
         return json_obj.get("totalNumberOfItems", 0)
 
+    def videos_paginated(
+        self,
+        order: Optional[ItemOrder] = None,
+        order_direction: Optional[OrderDirection] = None,
+    ) -> List["Video"]:
+        """Get the users favorite videos, using pagination.
+
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user items. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.media.Video` objects containing the favorite videos.
+        """
+        count = self.session.user.favorites.get_videos_count()
+        return get_items(
+            self.session.user.favorites.videos, count, order, order_direction
+        )
+
     def videos(
         self,
         limit: int = 50,
@@ -876,6 +892,21 @@ class Favorites:
                 parse=self.session.parse_media,
             ),
         )
+
+    def get_videos_count(
+        self,
+    ) -> int:
+        """Get the total number of videos in the user's collection.
+
+        This performs a minimal API request (limit=1) to fetch metadata about the tracks
+        without retrieving all of them. The API response contains 'totalNumberOfItems',
+        which represents the total items (videos) available.
+        :return: The number of items available.
+        """
+        params = {"limit": 1, "offset": 0}
+
+        json_obj = self.requests.map_request(f"{self.base_url}/videos", params=params)
+        return json_obj.get("totalNumberOfItems", 0)
 
     def mixes(
         self,
