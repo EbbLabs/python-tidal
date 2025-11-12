@@ -3,6 +3,11 @@
 History
 =======
 
+v0.8.9
+--------
+* Bugfix: Favorite videos default limit incorrect - tehkillerbee_
+* Tests: Added get_favorite_* tests - tehkillerbee_
+
 v0.8.8
 --------
 * Bugfix: OAuth Client ID, secret updated - tehkillerbee_

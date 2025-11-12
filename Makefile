@@ -20,7 +20,7 @@ shell:
 install:
 	rm -rf dist
 	poetry build
-	pip install dist/*.whl
+	pip install dist/*.whl --break-system-packages
 
 format:
 	${POETRY} isort tidalapi tests

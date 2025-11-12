@@ -417,6 +417,14 @@ def test_add_remove_favorite_playlists(session):
     assert_playlists_present(playlists_multiple, should_exist=False)
 
 
+def test_get_favorite_tracks(session):
+    favorites = session.user.favorites
+    tracks = favorites.tracks_paginated()
+    tracks_count = favorites.get_tracks_count()
+    assert len(tracks) > 0  # and tracks_count == len(tracks)
+    assert isinstance(tracks[0], tidalapi.Track)
+
+
 def test_add_remove_favorite_track(session):
     favorites = session.user.favorites
     track_id = 32961853
@@ -458,17 +466,18 @@ def test_add_remove_favorite_track_multiple(session):
     assert_tracks_present(tracks_multiple, should_exist=False)
 
 
+def test_get_favorite_videos(session):
+    favorites = session.user.favorites
+    videos = favorites.videos_paginated()
+    videos_count = favorites.get_videos_count()
+    assert len(videos) == videos_count and videos_count > 0
+    assert isinstance(videos[0], tidalapi.media.Video)
+
+
 def test_add_remove_favorite_video(session):
     favorites = session.user.favorites
     video_id = 160850422
     add_remove(video_id, favorites.add_video, favorites.remove_video, favorites.videos)
-
-
-def test_get_favorite_mixes(session):
-    favorites = session.user.favorites
-    mixes = favorites.mixes()
-    assert len(mixes) > 0
-    assert isinstance(mixes[0], tidalapi.MixV2)
 
 
 def test_get_favorite_playlists_order(session):
@@ -515,6 +524,14 @@ def test_get_favorite_playlists_order(session):
 
     # Cleanup
     assert session.user.favorites.remove_playlist(playlist_ids)
+
+
+def test_get_favorite_albums(session):
+    favorites = session.user.favorites
+    albums = favorites.albums_paginated()
+    albums_count = favorites.get_albums_count()
+    assert len(albums) > 0 and albums_count == len(albums)
+    assert isinstance(albums[0], tidalapi.Album)
 
 
 def test_get_favorite_albums_order(session):
@@ -576,6 +593,13 @@ def test_get_favorite_albums_order(session):
         assert session.user.favorites.remove_album(album_id)
 
 
+def test_get_favorite_mixes(session):
+    favorites = session.user.favorites
+    mixes = favorites.mixes()
+    assert len(mixes) > 0
+    assert isinstance(mixes[0], tidalapi.MixV2)
+
+
 def test_get_favorite_mixes_order(session):
     mix_ids = [
         "0007646f7c64d03d56846ed25dae3d",
@@ -631,6 +655,14 @@ def test_get_favorite_mixes_order(session):
 
     # Cleanup
     assert session.user.favorites.remove_mixes(mix_ids, validate=True)
+
+
+def test_get_favorite_artists(session):
+    favorites = session.user.favorites
+    artists = favorites.artists_paginated()
+    artists_count = favorites.get_artists_count()
+    assert len(artists) > 0 and artists_count == len(artists)
+    assert isinstance(artists[0], tidalapi.Artist)
 
 
 def test_get_favorite_artists_order(session):

@@ -739,8 +739,9 @@ class Session:
         request = self.request_session.post(url, params)
         json = request.json()
         if request.status_code != 200:
-            raise AuthenticationError("Authentication failed")
-            # raise AuthenticationError(Authentication failed json["error"], json["error_description"])
+            raise AuthenticationError(
+                f"Authentication failed with error '{json['error']}: {json['error_description']}'"
+            )
         if not request.ok:
             log.warning("The refresh token has expired, a new login is required.")
             return False
