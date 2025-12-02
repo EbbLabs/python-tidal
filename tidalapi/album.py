@@ -89,6 +89,7 @@ class Album:
                 request = self.request.request("GET", "albums/%s" % self.id)
             except ObjectNotFound as e:
                 e.args = ("Album with id %s not found" % self.id,)
+                raise e
             except TooManyRequests as e:
                 e.args = ("Album unavailable",)
                 raise e
