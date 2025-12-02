@@ -25,7 +25,7 @@ import copy
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Union, cast, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
 import dateutil.parser
 
