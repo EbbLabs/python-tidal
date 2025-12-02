@@ -304,7 +304,7 @@ class Track(Media):
         self.audio_quality = json_obj["audioQuality"]
         self.audio_modes = json_obj["audioModes"]
         self.version = json_obj["version"]
-        self.media_metadata_tags = json_obj.get("mediaMetadata", {}).get("tags", {})
+        self.media_metadata_tags = (json_obj.get("mediaMetadata") or {}).get("tags", {})
 
         if self.version is not None:
             self.full_name = f"{json_obj['title']} ({json_obj['version']})"
