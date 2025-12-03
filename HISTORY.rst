@@ -5,6 +5,9 @@ History
 
 v0.8.9
 --------
+* Bugfix: Return correct Exception, depending on status_code (404, 429). Add missing Raise, comments. Fixes #385 - tehkillerbee_
+* Added missing fields to Media, Tracks, Videos. Updated tests - tehkillerbee_
+* Bugfix: Handle Unavailable tracks gracefully. - tehkillerbee_
 * Bugfix: Favorite videos default limit incorrect - tehkillerbee_
 * Tests: Added get_favorite_* tests - tehkillerbee_
 

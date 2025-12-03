@@ -25,7 +25,7 @@ import copy
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
 import dateutil.parser
 
@@ -180,22 +180,34 @@ class Media:
     actual media, use the release date of the album.
     """
 
-    id: Optional[int] = -1
-    name: Optional[str] = None
-    duration: Optional[int] = -1
-    available: bool = True
-    tidal_release_date: Optional[datetime] = None
-    user_date_added: Optional[datetime] = None
-    track_num: int = -1
-    volume_num: int = 1
+    id: int
+    title: str
+    name: str  # aka. title
+    duration: int  # Duration, in seconds
     explicit: bool = False
     popularity: int = -1
+
+    allow_streaming: bool = False
+    available: bool = False  # aka. allow_streaming
+    stream_ready: bool = False
+    stem_ready: bool = False
+    dj_ready: bool = False
+    ad_supported_stream_ready: bool = False
+
+    stream_start_date: Optional[datetime] = None
+    tidal_release_date: Optional[datetime] = None  # aka. streamStartDate
+    date_added: Optional[datetime] = None
+    user_date_added: Optional[datetime] = None  # aka. dateAdded
+    track_num: int = 1  # trackNumber
+    volume_num: int = 1  # volumeNumber
+
     artist: Optional["tidalapi.artist.Artist"] = None
     #: For the artist credit page
     artist_roles = None
     artists: Optional[List["tidalapi.artist.Artist"]] = None
     album: Optional["tidalapi.album.Album"] = None
     type: Optional[str] = None
+
     # Direct URL to media https://listen.tidal.com/track/<id> or https://listen.tidal.com/browse/album/<album_id>/track/<track_id>
     listen_url: str = ""
     # Direct URL to media https://tidal.com/browse/track/<id>
@@ -237,27 +249,33 @@ class Media:
         self.album = album
 
         self.id = json_obj["id"]
-        self.name = json_obj["title"]
+        self.title = json_obj["title"]
+        self.name = self.title
         self.duration = json_obj["duration"]
-        self.available = bool(json_obj["streamReady"])
+        self.explicit = bool(json_obj["explicit"])
 
-        # Removed media does not have a release date.
-        self.tidal_release_date = None
-        release_date = json_obj.get("streamStartDate")
-        self.tidal_release_date = (
-            dateutil.parser.isoparse(release_date) if release_date else None
-        )
+        self.allow_streaming = bool(json_obj["allowStreaming"])
+        # Duplicate of allow_streaming, for backwards compatibility
+        self.available = self.allow_streaming
+        self.stream_ready = bool(json_obj["streamReady"])
+        self.stem_ready = bool(json_obj["stemReady"])
+        self.dj_ready = bool(json_obj["djReady"])
+        self.ad_supported_stream_ready = bool(json_obj["adSupportedStreamReady"])
 
-        # When getting items from playlists they have a date added attribute, same with
-        #  favorites.
-        user_date_added = json_obj.get("dateAdded")
-        self.user_date_added = (
-            dateutil.parser.isoparse(user_date_added) if user_date_added else None
+        # Removed media does not have a release date
+        stream_start_date = json_obj.get("streamStartDate")
+        self.stream_start_date = (
+            dateutil.parser.isoparse(stream_start_date) if stream_start_date else None
         )
+        self.tidal_release_date = self.stream_start_date
+
+        # When getting items from playlists they have a date added attribute, same with favorites.
+        date_added = json_obj.get("dateAdded")
+        self.date_added = dateutil.parser.isoparse(date_added) if date_added else None
+        self.user_date_added = self.date_added
 
         self.track_num = json_obj["trackNumber"]
         self.volume_num = json_obj["volumeNumber"]
-        self.explicit = bool(json_obj["explicit"])
         self.popularity = json_obj["popularity"]
         self.artist = artist
         self.artists = artists
@@ -283,39 +301,87 @@ class Media:
 class Track(Media):
     """An object containing information about a track."""
 
-    replay_gain = None
-    peak = None
-    isrc = None
+    # Media access
+    access_type: str = ""
+    spotlighted: bool = False
+    pay_to_stream: bool = False
+    premium_streaming_only: bool = False
+    editable: bool = False
+    upload: bool = False
+
+    # Audio quality and metadata
     audio_quality: Optional[str] = None
     audio_modes: Optional[List[str]] = None
-    version = None
-    full_name: Optional[str] = None
-    copyright = None
     media_metadata_tags = None
+
+    # Identification
+    index: Optional[int] = None
+    item_uuid: Optional[str] = None
+    isrc: Optional[str] = None
+
+    # Track info
+    date_added: Optional[datetime] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    copyright: str = ""
+    url: str = ""
+    bpm: int = 0
+    key: str = None
+    key_scale: str = None
+    peak: float = 0.0
+    replay_gain: float = 0.0
+    # Related mixes
+    mixes: Optional[Dict] = None
+
+    # Derived fields: Full name from title, name and version
+    full_name: str = ""
 
     def parse_track(self, json_obj: JsonObj, album: Optional[Album] = None) -> Track:
         Media.parse(self, json_obj, album)
-        self.replay_gain = json_obj["replayGain"]
-        # Tracks from the pages endpoints might not actually exist
-        if "peak" in json_obj and "isrc" in json_obj:
-            self.peak = json_obj["peak"]
-            self.isrc = json_obj["isrc"]
-            self.copyright = json_obj["copyright"]
-        self.audio_quality = json_obj["audioQuality"]
-        self.audio_modes = json_obj["audioModes"]
-        self.version = json_obj["version"]
-        self.media_metadata_tags = json_obj.get("mediaMetadata", {}).get("tags", {})
+        self.pay_to_stream = json_obj.get("payToStream")
+        self.premium_streaming_only = json_obj.get("premiumStreamingOnly")
+        self.editable = json_obj.get("editable")
+        self.upload = json_obj.get("upload")
+        self.spotlighted = json_obj.get("spotlighted")
 
-        if self.version is not None:
-            self.full_name = f"{json_obj['title']} ({json_obj['version']})"
-        else:
-            self.full_name = json_obj["title"]
         # Generate share URLs from track ID and album (if it exists)
+        self.url = json_obj.get("url")
         if self.album:
             self.listen_url = f"{self.session.config.listen_base_url}/album/{self.album.id}/track/{self.id}"
         else:
             self.listen_url = f"{self.session.config.listen_base_url}/track/{self.id}"
         self.share_url = f"{self.session.config.share_base_url}/track/{self.id}"
+
+        self.audio_quality = json_obj.get("audioQuality")
+        self.audio_modes = json_obj.get("audioModes")
+
+        # Parse fields that are only valid when track is available
+        if self.available:
+            self.access_type = json_obj.get("accessType", "None")
+
+            self.media_metadata_tags = json_obj.get("mediaMetadata", {}).get("tags", {})
+
+            self.index = json_obj.get("index")
+            self.item_uuid = json_obj.get("itemUuid")
+            self.isrc = json_obj.get("isrc")
+
+            self.date_added = self.user_date_added
+            self.description = json_obj.get("description")
+            self.version = json_obj.get("version")
+            self.copyright = json_obj.get("copyright")
+
+            self.bpm = json_obj.get("bpm")
+            self.key = json_obj.get("key")
+            self.key_scale = json_obj.get("keyScale")
+            self.peak = json_obj.get("peak")
+            self.replay_gain = json_obj.get("replayGain")
+            # TODO Parse mixes into class Objects
+            self.mixes = json_obj.get("mixes", {})
+
+        if self.version is not None:
+            self.full_name = f"{self.title} ({self.version})"
+        else:
+            self.full_name = self.title
 
         return copy.copy(self)
 
@@ -838,7 +904,13 @@ class Video(Media):
 
     release_date: Optional[datetime] = None
     video_quality: Optional[str] = None
-    cover: Optional[str] = None
+    image_id: Optional[str] = None
+    image_path: Optional[str] = None
+    cover: Optional[str] = None  # aka. image_id
+
+    vibrant_color: str = "#000000"
+    ads_pre_paywall_only: bool = False
+    ads_url: Optional[str] = ""
 
     def parse_video(self, json_obj: JsonObj, album: Optional[Album] = None) -> Video:
         Media.parse(self, json_obj, album)
@@ -846,9 +918,14 @@ class Video(Media):
         self.release_date = (
             dateutil.parser.isoparse(release_date) if release_date else None
         )
-        self.cover = json_obj["imageId"]
-        # Videos found in the /pages endpoints don't have quality
+        # Note: Videos found in the /pages endpoints don't have quality
         self.video_quality = json_obj.get("quality")
+        self.image_id = json_obj.get("imageId")
+        self.image_path = json_obj.get("imagePath")
+        self.cover = self.image_id
+        self.vibrant_color = json_obj.get("vibrantColor")
+        self.ads_pre_paywall_only = json_obj.get("adsPrePaywallOnly")
+        self.ads_url = json_obj.get("adsUrl")
 
         # Generate share URLs from track ID and artist (if it exists)
         if self.artist:

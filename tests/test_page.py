@@ -139,8 +139,10 @@ def test_page_iterator(session):
 def test_get_video_items(session):
     videos = session.videos()
     mix = videos.categories[1].items[0]
-    for item in mix.items():
-        assert isinstance(item, tidalapi.Video)
+    items = mix.items()
+    for item in items:
+        # Video playlists might contain both tracks and videos
+        assert isinstance(item, tidalapi.Video) or isinstance(item, tidalapi.Track)
 
     assert len(mix.items()) >= 25
 

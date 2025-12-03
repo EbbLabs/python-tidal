@@ -77,7 +77,7 @@ def http_error_to_tidal_error(http_error: HTTPError) -> TidalAPIError | None:
         else:
             log.debug("Request response: '%s'", json.dumps(json_data))
 
-    elif response.status_code == 404:
+    if response.status_code == 404:
         return ObjectNotFound("Object not found")
     elif response.status_code == 429:
         retry_after = int(response.headers.get("Retry-After", -1))

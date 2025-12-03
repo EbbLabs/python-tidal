@@ -44,32 +44,115 @@ def test_media(session):
 def test_track(session):
     track = session.track(125169484)
 
-    assert track.name == "Alone, Pt. II"
+    # Basic metadata
+    assert track.id == 125169484
+    assert track.title == "Alone, Pt. II"
+    assert track.name == track.title
+    assert track.version is None
+    assert track.full_name == track.title  # Version is none, full_name == title
     assert track.duration == 179
-    assert track.replay_gain == -10.4
-    assert track.peak == 0.988312
+    assert track.explicit is False
+    assert track.popularity == 73
     assert track.available is True
-    assert track.tidal_release_date == datetime(2019, 12, 27, 0, 0, tzinfo=tz.tzutc())
+    assert track.stream_start_date == datetime(2019, 12, 27, 0, 0, tzinfo=tz.tzutc())
+    assert track.tidal_release_date == track.stream_start_date
+    assert track.date_added is None
+    assert track.user_date_added == track.user_date_added
     assert track.track_num == 1
     assert track.volume_num == 1
-    assert track.version is None
-    assert (
-        track.copyright
-        == "(P) 2019 Kreatell Music under exclusive license to Sony Music Entertainment Sweden AB"
-    )
-    assert track.isrc == "NOG841907010"
-    assert track.explicit is False
-    assert track.audio_quality == tidalapi.Quality.high_lossless
+
+    # Album
     assert track.album.name == "Alone, Pt. II"
     assert track.album.id == 125169472
+    assert track.album.cover == "345d81fd-3a06-4fe4-b77a-6f6e28baad25"
+    assert track.album.video_cover is None
+
+    # URLs
+    assert track.url == "http://www.tidal.com/track/125169484"
     assert (
         track.listen_url == "https://listen.tidal.com/album/125169472/track/125169484"
     )
     assert track.share_url == "https://tidal.com/browse/track/125169484"
 
+    # Artist(s)
     assert track.artist.name == "Alan Walker"
+    assert track.artist.picture == "c46be937-9869-4454-8d80-ba6a6e23b6c6"
     artist_names = [artist.name for artist in track.artists]
-    assert [artist in artist_names for artist in ["Alan Walker", "Ava Max"]]
+    for name in ["Alan Walker", "Ava Max"]:
+        assert name in artist_names
+
+    # Audio / streaming
+    assert track.audio_quality == tidalapi.Quality.high_lossless
+    assert track.audio_modes == ["STEREO"]
+    assert track.media_metadata_tags == ["LOSSLESS", "HIRES_LOSSLESS"]
+    assert track.is_lossless is True
+    assert track.is_hi_res_lossless is True
+    assert track.is_dolby_atmos is False
+    assert track.ad_supported_stream_ready is True
+    assert track.allow_streaming is True
+    assert track.stream_ready is True
+    assert track.stem_ready is False
+    assert track.dj_ready is True
+    assert track.pay_to_stream is False
+    assert track.premium_streaming_only is False
+    assert track.access_type == "PUBLIC"
+
+    # Music metadata
+    assert track.bpm == 88
+    assert track.replay_gain == -10.4
+    assert track.peak == 0.988312
+    assert track.mixes == {"TRACK_MIX": "001603cb31f1842e052770e0ad7647"}
+    assert track.key == "FSharp"
+    assert track.key_scale == "MAJOR"
+    assert track.allow_streaming is True
+    assert track.pay_to_stream is False
+    assert track.date_added is None  # Missing
+    assert track.description is None
+    assert track.editable is False
+    assert track.index is None
+    assert track.item_uuid is None
+    assert track.spotlighted is False
+    assert track.upload is False
+
+    # Copyright / ISRC
+    assert (
+        track.copyright
+        == "(P) 2019 Kreatell Music under exclusive license to Sony Music Entertainment Sweden AB"
+    )
+    assert track.isrc == "NOG841907010"
+
+    # Session / requests
+    assert track.session is not None
+    assert track.requests is not None
+
+    # Type info
+    assert track.type is None
+    assert track.artist_roles is None
+
+
+def test_unavailable_track(session):
+    # Unavailable tracks are only "accessible" through playlist
+    pl = session.playlist("93f6d95b-cdfe-4ee6-8c10-84098e265535")
+    # Get an "Unavailable" track from playlist
+    track = pl.tracks(1, 28)[0]
+    # Unavailable track will have most of the below flags set to "False"
+    assert track.available is False
+    assert track.allow_streaming is False
+    assert track.pay_to_stream is False
+    assert track.premium_streaming_only is False
+    assert track.editable is False
+    assert track.upload is False
+    assert track.spotlighted is False
+    # Certain fields will have valid values
+    assert track.id == 77909345
+    assert track.title == "Fostul Remix"
+    assert track.full_name == track.title
+    assert track.url == "http://www.tidal.com/track/77909345"
+    assert track.listen_url == "https://listen.tidal.com/album/77909343/track/77909345"
+    assert track.share_url == "https://tidal.com/browse/track/77909345"
+
+    assert track.audio_quality == "LOSSLESS"
+    assert track.audio_modes == ["STEREO"]
 
 
 def test_track_url(session):
@@ -304,20 +387,37 @@ def test_video(session):
     video = session.video(125506698)
 
     assert video.id == 125506698
-    assert video.name == "Alone, Pt. II"
+    assert video.title == "Alone, Pt. II"
+    assert video.name == video.title
     assert video.track_num == 0
     assert video.volume_num == 0
     assert video.release_date == datetime(2019, 12, 26, tzinfo=tz.tzutc())
     assert video.tidal_release_date == datetime(2019, 12, 27, 9, tzinfo=tz.tzutc())
     assert video.duration == 237
     assert video.video_quality == "MP4_1080P"
-    assert video.available is True
-    assert video.explicit is False
     assert video.type == "Music Video"
     assert video.album is None
+    assert video.available is True
+    assert video.explicit is False
+    assert video.ad_supported_stream_ready is True  # adSupportedStreamReady
+    assert video.ads_pre_paywall_only is True  # adsPrePaywallOnly
+    assert video.ads_url is None  # adsUrl
+    assert video.allow_streaming is True  # allowStreaming
+    assert video.dj_ready is True  # djReady
+    assert video.stem_ready is False  # stemReady
+    assert video.stream_ready is True  # streamReady
+
+    assert video.popularity == 21  # popularity
+    assert video.image_id == "7f1160e3-bdc3-4764-810b-93194443913d"  # imageId
+    assert video.image_path is None  # imagePath
+    assert video.tidal_release_date == datetime(
+        2019, 12, 27, 9, tzinfo=tz.tzutc()
+    )  # streamStartDate
+    assert video.vibrant_color == "#e2f2e5"  # vibrantColor
 
     assert video.artist.name == "Alan Walker"
     assert video.artist.id == 6159368
+    assert video.artist.picture == "c46be937-9869-4454-8d80-ba6a6e23b6c6"
     artist_names = [artist.name for artist in video.artists]
     assert [artist in artist_names for artist in ["Alan Walker", "Ava Max"]]
 
