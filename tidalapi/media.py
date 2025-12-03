@@ -344,11 +344,6 @@ class Track(Media):
         self.upload = json_obj.get("upload")
         self.spotlighted = json_obj.get("spotlighted")
 
-        if self.version is not None:
-            self.full_name = f"{self.title} ({self.version})"
-        else:
-            self.full_name = self.title
-
         # Generate share URLs from track ID and album (if it exists)
         self.url = json_obj.get("url")
         if self.album:
@@ -382,6 +377,11 @@ class Track(Media):
             self.replay_gain = json_obj.get("replayGain")
             # TODO Parse mixes into class Objects
             self.mixes = json_obj.get("mixes", {})
+
+        if self.version is not None:
+            self.full_name = f"{self.title} ({self.version})"
+        else:
+            self.full_name = self.title
 
         return copy.copy(self)
 
