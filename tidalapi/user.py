@@ -840,6 +840,7 @@ class Favorites:
         This performs a minimal API request (limit=1) to fetch metadata about the tracks
         without retrieving all of them. The API response contains 'totalNumberOfItems',
         which represents the total items (tracks) available.
+        Note: This number also includes track that may not be available for playback
         :return: The number of items available.
         """
         params = {"limit": 1, "offset": 0}
