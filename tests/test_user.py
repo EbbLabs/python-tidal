@@ -430,7 +430,8 @@ def test_get_favorite_tracks(session):
     favorites = session.user.favorites
     tracks = favorites.tracks_paginated()
     tracks_count = favorites.get_tracks_count()
-    assert len(tracks) > 0  # and tracks_count == len(tracks)
+    # Only the available tracks are returned so the final track count might be lower
+    assert len(tracks) > 0 and tracks_count >= len(tracks)
     assert isinstance(tracks[0], tidalapi.Track)
 
 
@@ -486,7 +487,7 @@ def test_get_favorite_videos(session):
     favorites = session.user.favorites
     videos = favorites.videos_paginated()
     videos_count = favorites.get_videos_count()
-    assert len(videos) == videos_count and videos_count > 0
+    assert videos_count > 0 and len(videos) == videos_count
     assert isinstance(videos[0], tidalapi.media.Video)
 
 
@@ -494,6 +495,14 @@ def test_add_remove_favorite_video(session):
     favorites = session.user.favorites
     video_id = 160850422
     add_remove(video_id, favorites.add_video, favorites.remove_video, favorites.videos)
+
+
+def test_get_favorite_playlists(session):
+    favorites = session.user.favorites
+    playlists = favorites.playlists_paginated()
+    playlists_count = favorites.get_playlists_count()
+    assert len(playlists) > 0 and playlists_count == len(playlists)
+    assert isinstance(playlists[0], tidalapi.Playlist)
 
 
 def test_get_favorite_playlists_order(session):
