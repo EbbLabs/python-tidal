@@ -3,6 +3,12 @@
 History
 =======
 
+v0.8.10
+--------
+* Tests: Updated misc. tests, added pagination tests - tehkillerbee_
+* Bugfix: Final chunk count must not exceed maximum number of playlists (Fixes #389) - tehkillerbee_
+* Bugfix: Fix track version if empty (Fixes #388) - tehkillerbee_
+
 v0.8.9
 --------
 * Bugfix: Return correct Exception, depending on status_code (404, 429). Add missing Raise, comments. Fixes #385 - tehkillerbee_
