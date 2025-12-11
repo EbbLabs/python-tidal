@@ -41,7 +41,17 @@ def get_items(
     items = []
 
     with ThreadPoolExecutor(processes) as pool:
-        args_list = [(func, chunk_size, offset, *args) for offset in offsets]
+        # Build argument tuples for each worker.
+        # The limit is capped using `total_count` so the final chunk does not exceed
+        # the available number of items (e.g., last chunk may be smaller than chunk_size).
+        # i.e. for a total number of 123 tracks, the following ranges will be generated
+        #   (func, 50, 0, ...)
+        #   (func, 50, 50, ...)
+        #   (func, 23, 100, ...)
+        args_list = [
+            (func, min(chunk_size, total_count - offset), offset, *args)
+            for offset in offsets
+        ]
 
         for page_items in pool.map(func_wrapper, args_list):
             items.extend(page_items)
