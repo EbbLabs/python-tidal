@@ -367,7 +367,7 @@ class Track(Media):
 
             self.date_added = self.user_date_added
             self.description = json_obj.get("description")
-            self.version = json_obj.get("version")
+            self.version = json_obj.get("version") if json_obj.get("version") else None
             self.copyright = json_obj.get("copyright")
 
             self.bpm = json_obj.get("bpm")
