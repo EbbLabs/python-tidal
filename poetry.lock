@@ -972,14 +972,14 @@ files = [
 
 [[package]]
 name = "mpegdash"
-version = "0.4.0"
+version = "0.4.1"
 description = "MPEG-DASH MPD(Media Presentation Description) Parser"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "mpegdash-0.4.0-py3-none-any.whl", hash = "sha256:d07f6e1f2a67ddce1be501e3ad7abc29a2d6a7b1830b4da974b49c2ebe99cf2a"},
-    {file = "mpegdash-0.4.0.tar.gz", hash = "sha256:65368c7a367c6875eb8c456a08644eb0708981a745044da0c9e942a3bc2b6389"},
+    {file = "mpegdash-0.4.1-py3-none-any.whl", hash = "sha256:788e559b73acbf9175422548c58a4c441486c0ce0633fa10f77097bfffeaad4d"},
+    {file = "mpegdash-0.4.1.tar.gz", hash = "sha256:e31d81e1f0184cc456553ef2a4a1de1c662972b8ce04b687c1854180912759e6"},
 ]
 
 [[package]]
@@ -1835,4 +1835,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.8"
-content-hash = "5ca113aeb551a76c25cea8919954156c5bce4a154a93c6331048af188ee954a6"
+content-hash = "eb37fb08af4e8d1f657b546398964ff33431f7f22898065fd31b9d6a70997064"

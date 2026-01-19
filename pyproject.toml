@@ -29,7 +29,7 @@ python-dateutil = "^2.8.2"
 typing-extensions = "^4.12.2"
 ratelimit = "^2.2.1"
 isodate = "^0.7.2"
-mpegdash = "^0.4.0"
+mpegdash = "^0.4.1"
 pyaes = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
