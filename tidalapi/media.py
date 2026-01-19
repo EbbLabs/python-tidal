@@ -180,7 +180,7 @@ class Media:
     actual media, use the release date of the album.
     """
 
-    id: int
+    id: str
     title: str
     name: str  # aka. title
     duration: int  # Duration, in seconds
