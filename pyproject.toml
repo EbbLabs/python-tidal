@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tidalapi"
-version = "0.8.10"
+version = "0.8.11"
 description = "Unofficial API for TIDAL music streaming service."
 authors = ["Thomas Amland <thomas.amland@googlemail.com>"]
 maintainers = ["tehkillerbee <tehkillerbee@users.noreply.github.com>"]
