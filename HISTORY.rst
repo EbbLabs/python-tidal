@@ -3,6 +3,10 @@
 History
 =======
 
+v0.8.11
+--------
+* Bump mpegdash version to 0.4.1 (Fixes bug caused by non-compliant DASH manifests)
+
 v0.8.10
 --------
 * Tests: Updated misc. tests, added pagination tests - tehkillerbee_
