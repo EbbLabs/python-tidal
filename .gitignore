@@ -90,3 +90,6 @@ tidal*.json
 
 # Local devtools
 devtools
+
+# Nix / direnv
+.direnv/
