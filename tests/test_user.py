@@ -65,6 +65,14 @@ def test_get_user_playlists(session):
     assert playlist_ids | favourite_ids == both_ids
 
 
+def test_get_user_playlists_paginated(session):
+    expected_count = session.user.favorites.get_playlists_count()
+    all_playlists = session.user.favorites.playlists_paginated()
+    assert len(all_playlists) == expected_count
+    unique_ids = set(x.id for x in all_playlists)
+    assert len(unique_ids) == expected_count
+
+
 def test_get_playlist_folders(session):
     folder = session.user.create_folder(title="testfolder")
     assert folder
