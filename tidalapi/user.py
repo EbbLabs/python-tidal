@@ -671,16 +671,31 @@ class Favorites:
         order: Optional[PlaylistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
     ) -> List["Playlist"]:
-        """Get the users favorite playlists, using pagination.
+        """Get the users favorite playlists, using cursor-based pagination.
+
+        The v2 my-collection/playlists/folders endpoint uses cursor-based
+        pagination. Each response includes a ``cursor`` field that must be
+        passed to the next request to retrieve the following page.
 
         :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite playlists.
         """
-        count = self.session.user.favorites.get_playlists_count()
-        return get_items(
-            self.session.user.favorites.playlists, count, order, order_direction
-        )
+        playlists: List["Playlist"] = []
+        cursor: Optional[str] = None
+
+        while True:
+            items = self.playlists(
+                cursor=cursor,
+                order=order,
+                order_direction=order_direction,
+            )
+            playlists.extend(items)
+            cursor = self._last_playlists_cursor
+            if not cursor or not items:
+                break
+
+        return playlists
 
     def playlists(
         self,
@@ -688,14 +703,18 @@ class Favorites:
         offset: int = 0,
         order: Optional[PlaylistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
+        cursor: Optional[str] = None,
     ) -> List["Playlist"]:
-        """Get the users favorite playlists (v2 endpoint), relative to the root folder
+        """Get the users favorite playlists (v2 endpoint), relative to the root folder.
         This function is limited to 50 by TIDAL, requiring pagination.
 
         :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
-        :param offset: The index of the first playlist to fetch
+        :param offset: The index of the first playlist to fetch. Note: this parameter is
+            ignored by the TIDAL API for this endpoint. Use ``cursor`` for pagination.
         :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :param cursor: Cursor for fetching the next page of results. Obtained from
+            :attr:`_last_playlists_cursor` after a previous call to this method.
         :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite playlists.
         """
         params = {
@@ -704,6 +723,8 @@ class Favorites:
             "limit": limit,
             "includeOnly": "PLAYLIST",  # Include only PLAYLIST types, FOLDER will be ignored
         }
+        if cursor:
+            params["cursor"] = cursor
         if order:
             params["order"] = order.value
         else:
@@ -714,17 +735,13 @@ class Favorites:
             params["orderDirection"] = OrderDirection.Descending.value
 
         endpoint = "my-collection/playlists/folders"
-        return cast(
-            List["Playlist"],
-            self.session.request.map_request(
-                url=urljoin(
-                    self.session.config.api_v2_location,
-                    endpoint,
-                ),
-                params=params,
-                parse=self.session.parse_playlist,
-            ),
+        url = urljoin(self.session.config.api_v2_location, endpoint)
+        json_obj = self.session.request.request("GET", url, params).json()
+        items = self.session.request.map_json(
+            json_obj, parse=self.session.parse_playlist
         )
+        self._last_playlists_cursor = json_obj.get("cursor")
+        return cast(List["Playlist"], items)
 
     def playlist_folders(
         self,
@@ -733,14 +750,19 @@ class Favorites:
         order: Optional[PlaylistOrder] = None,
         order_direction: Optional[OrderDirection] = None,
         parent_folder_id: str = "root",
+        cursor: Optional[str] = None,
     ) -> List["Folder"]:
         """Get a list of folders created by the user.
 
         :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
-        :param offset: The index of the first playlist folder to fetch
+        :param offset: The index of the first playlist folder to fetch. Note: this
+            parameter is ignored by the TIDAL API for this endpoint. Use ``cursor``
+            for pagination.
         :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
         :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :param parent_folder_id: Parent folder ID. Default: 'root' playlist folder
+        :param cursor: Cursor for fetching the next page of results. Obtained from
+            :attr:`_last_folders_cursor` after a previous call to this method.
         :return: Returns a list of :class:`~tidalapi.playlist.Folder` objects containing the Folders.
         """
         params = {
@@ -750,23 +772,19 @@ class Favorites:
             "order": "NAME",
             "includeOnly": "FOLDER",
         }
+        if cursor:
+            params["cursor"] = cursor
         if order:
             params["order"] = order.value
         if order_direction:
             params["orderDirection"] = order_direction.value
 
         endpoint = "my-collection/playlists/folders"
-        return cast(
-            List["Folder"],
-            self.session.request.map_request(
-                url=urljoin(
-                    self.session.config.api_v2_location,
-                    endpoint,
-                ),
-                params=params,
-                parse=self.session.parse_folder,
-            ),
-        )
+        url = urljoin(self.session.config.api_v2_location, endpoint)
+        json_obj = self.session.request.request("GET", url, params).json()
+        items = self.session.request.map_json(json_obj, parse=self.session.parse_folder)
+        self._last_folders_cursor = json_obj.get("cursor")
+        return cast(List["Folder"], items)
 
     def get_playlists_count(self) -> int:
         """Get the total number of playlists in the user's root collection.
