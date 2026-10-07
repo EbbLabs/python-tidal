@@ -750,6 +750,13 @@ class Session:
             seconds=json["expires_in"]
         )
         self.token_type = json["token_type"]
+        # TIDAL rotates refresh tokens: the response may carry a new one and the
+        # old one is then invalidated. Keep it, otherwise a persisted session ends
+        # up holding a dead refresh token and the next refresh logs the user out.
+        # When the field is absent the existing refresh token is still valid.
+        new_refresh_token = json.get("refresh_token")
+        if new_refresh_token:
+            self.refresh_token = new_refresh_token
         return True
 
     @property
