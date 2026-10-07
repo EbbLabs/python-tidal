@@ -581,7 +581,9 @@ class Session:
                 "access_token": {"data": self.access_token},
                 "refresh_token": {"data": self.refresh_token},
                 "is_pkce": {"data": self.is_pkce},
-                # "expiry_time": {"data": self.expiry_time},
+                "expiry_time": {
+                    "data": self.expiry_time.isoformat() if self.expiry_time else None
+                },
             }
             with session_file.open("w") as file:
                 json.dump(data, file)
@@ -596,12 +598,18 @@ class Session:
             return False
 
         assert self, "No session loaded"
+        expiry_time = None
+        if expiry_data := data.get("expiry_time", {}).get("data"):
+            try:
+                expiry_time = datetime.datetime.fromisoformat(expiry_data)
+            except ValueError:
+                log.info("Ignoring invalid expiry_time in %s", session_file)
         args = {
             "token_type": data.get("token_type", {}).get("data"),
             "access_token": data.get("access_token", {}).get("data"),
             "refresh_token": data.get("refresh_token", {}).get("data"),
             "is_pkce": data.get("is_pkce", {}).get("data"),
-            # "expiry_time": data.get("expiry_time", {}).get("data"),
+            "expiry_time": expiry_time,
         }
 
         return self.load_oauth_session(**args)

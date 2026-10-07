@@ -195,3 +195,32 @@ def test_failed_proactive_refresh_does_not_fail_the_request():
     )
 
     assert session.request.basic_request("GET", "tracks/1").ok
+
+
+def test_session_file_round_trips_expiry_time(tmp_path):
+    session_file = tmp_path / "session.json"
+    expiry_time = datetime.datetime(2030, 1, 2, 3, 4, 5)
+    session = make_session()
+    session.expiry_time = expiry_time
+    session.check_login = mock.Mock(return_value=True)
+    session.save_session_to_file(session_file)
+
+    loaded = tidalapi.Session(tidalapi.Config())
+    loaded.load_oauth_session = mock.Mock(return_value=True)
+    assert loaded.load_session_from_file(session_file)
+
+    assert loaded.load_oauth_session.call_args.kwargs["expiry_time"] == expiry_time
+
+
+def test_session_file_without_expiry_time_still_loads(tmp_path):
+    session_file = tmp_path / "session.json"
+    session_file.write_text(
+        '{"token_type": {"data": "Bearer"}, "access_token": {"data": "a"},'
+        ' "refresh_token": {"data": "r"}, "is_pkce": {"data": false}}'
+    )
+
+    loaded = tidalapi.Session(tidalapi.Config())
+    loaded.load_oauth_session = mock.Mock(return_value=True)
+    assert loaded.load_session_from_file(session_file)
+
+    assert loaded.load_oauth_session.call_args.kwargs["expiry_time"] is None
