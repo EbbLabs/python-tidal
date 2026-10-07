@@ -3,6 +3,16 @@
 History
 =======
 
+v0.8.12 (unreleased)
+--------------------
+* Bugfix: Keep the rotated refresh token returned by TIDAL in `token_refresh`, previously users were logged out after a few days - tehkillerbee_
+* Bugfix: Serialize concurrent access token refreshes, so parallel requests no longer refresh with an already invalidated refresh token - tehkillerbee_
+* Bugfix: Refresh the access token shortly before it expires, instead of relying on the wording of the expired-token error - tehkillerbee_
+* Bugfix: Retry a request with an expired access token only once, instead of recursing without limit - tehkillerbee_
+* Bugfix: `login_oauth` works after `client_enable_hires` has been called - tehkillerbee_
+* Bugfix: Sessions created without a config no longer share one `Config` object - tehkillerbee_
+* `save_session_to_file` and `load_session_from_file` now persist `expiry_time` - tehkillerbee_
+
 v0.8.11
 --------
 * Bump mpegdash version to 0.4.1 (Fixes bug caused by non-compliant DASH manifests)
