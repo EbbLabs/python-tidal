@@ -131,7 +131,11 @@ def test_rate_limit_backoff_defaults_to_a_minute():
     assert 55 < session.request.backoff_remaining() <= 60
 
 
-def test_backoff_is_off_by_default():
+def test_backoff_is_enabled_by_default():
+    assert tidalapi.Config().backoff is True
+
+
+def test_backoff_can_be_disabled():
     session = make_session([fake_response(429), fake_response(200)], backoff=False)
 
     with pytest.raises(TooManyRequests):

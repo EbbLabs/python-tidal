@@ -130,11 +130,13 @@ class Requests(object):
         """
         if not self.config.backoff:
             return
-        retry_after = get_retry_after(response)
+        # Only inspect error responses, this runs for every request
         if response.status_code == 429:
+            retry_after = get_retry_after(response)
             seconds = retry_after if retry_after > 0 else RATE_LIMIT_BACKOFF
             reason = "rate limited (HTTP 429)"
         elif is_abuse_response(response):
+            retry_after = get_retry_after(response)
             seconds = retry_after if retry_after > 0 else ABUSE_BACKOFF
             reason = f"abuse detected (HTTP 403): {response.text[:200]}"
         else:

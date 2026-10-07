@@ -13,7 +13,7 @@ v0.8.12 (unreleased)
 * Bugfix: Sessions created without a config no longer share one `Config` object - tehkillerbee_
 * `save_session_to_file` and `load_session_from_file` now persist `expiry_time` - tehkillerbee_
 * Added `AbuseDetected`, raised when TIDAL answers with an anti-abuse HTTP 403 - tehkillerbee_
-* Added `Config(backoff=True)`: stop sending requests after a rate limit or abuse response and raise `TidalBackoffError` until it has passed - tehkillerbee_
+* Added `Config(backoff=...)`, enabled by default: stop sending requests after a rate limit or abuse response and raise `TidalBackoffError` until it has passed. Pass `backoff=False` to disable - tehkillerbee_
 * Bugfix: Non-JSON error responses and `Retry-After` given as a date no longer break error handling - tehkillerbee_
 
 v0.8.11

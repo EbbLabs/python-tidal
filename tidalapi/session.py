@@ -119,7 +119,7 @@ class Config:
     item_limit: int
     #: Stop sending requests for a while after TIDAL answers with a rate limit
     #: (HTTP 429) or an anti-abuse rejection. While backing off, requests raise
-    #: :class:`.TidalBackoffError` instead of reaching TIDAL.
+    #: :class:`.TidalBackoffError` instead of reaching TIDAL. Enabled by default.
     backoff: bool
     quality: str
     video_quality: str
@@ -142,7 +142,7 @@ class Config:
         video_quality: str = media.VideoQuality.default,
         item_limit: int = 1000,
         alac: bool = True,
-        backoff: bool = False,
+        backoff: bool = True,
     ):
         self.quality = quality
         self.video_quality = video_quality
