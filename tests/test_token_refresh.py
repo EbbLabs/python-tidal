@@ -277,3 +277,27 @@ def test_sessions_do_not_share_a_default_config():
 
     assert first.config is not second.config
     assert second.config.client_id == device_client_id
+
+
+def test_expired_token_is_retried_only_once():
+    session = make_session()
+    session.request_session = mock.Mock()
+    session.request_session.post.return_value = fake_response(
+        json_data={
+            "access_token": "new-access",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        }
+    )
+    # TIDAL keeps reporting an expired token even after a successful refresh.
+    session.request_session.request.return_value = fake_response(
+        401, {"userMessage": "The token has expired. (Expired on time)"}
+    )
+
+    response = session.request.basic_request("GET", "tracks/1")
+
+    assert response.status_code == 401
+    assert session.request_session.post.call_count == 1
+    assert session.request_session.request.call_count == 2
+    retry_headers = session.request_session.request.call_args.kwargs["headers"]
+    assert retry_headers["authorization"] == "Bearer new-access"

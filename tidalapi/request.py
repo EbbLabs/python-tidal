@@ -107,6 +107,22 @@ class Requests(object):
             now = datetime.datetime.now(datetime.timezone.utc)
         return expiry_time - now <= TOKEN_EXPIRY_MARGIN
 
+    def _send(
+        self,
+        method: Methods,
+        url: str,
+        request_params: Mapping[str, Union[str, int, None]],
+        data: Optional[JsonObj],
+        headers: MutableMapping[str, str],
+    ) -> requests.Response:
+        """Send a request with the session's current access token."""
+        access_token = self.session.access_token
+        if self.session.token_type and access_token is not None:
+            headers["authorization"] = self.session.token_type + " " + access_token
+        return self.session.request_session.request(
+            method, url, params=request_params, data=data, headers=headers
+        )
+
     def basic_request(
         self,
         method: Methods,
@@ -146,16 +162,12 @@ class Requests(object):
                 # it isn't, the expired-token handling below reports the failure.
                 log.warning("Proactive access token refresh failed: %s", e)
 
-        sent_access_token = self.session.access_token
-        if self.session.token_type and sent_access_token is not None:
-            headers["authorization"] = self.session.token_type + " " + sent_access_token
         if base_url is None:
             base_url = self.session.config.api_v1_location
 
         url = urljoin(base_url, path)
-        request = self.session.request_session.request(
-            method, url, params=request_params, data=data, headers=headers
-        )
+        sent_access_token = self.session.access_token
+        request = self._send(method, url, request_params, data, headers)
 
         refresh_token = self.session.refresh_token
         if not request.ok and refresh_token:
@@ -171,7 +183,9 @@ class Requests(object):
                 log.debug("The access token has expired, trying to refresh it.")
                 refreshed = self._refresh_access_token(sent_access_token)
                 if refreshed:
-                    request = self.basic_request(method, url, params, data, headers)
+                    # Retry exactly once. If TIDAL still reports an expired token
+                    # (e.g. clock skew), return that response instead of looping.
+                    request = self._send(method, url, request_params, data, headers)
             else:
                 log.debug("HTTP error on %d", request.status_code)
                 log.debug("Response text\n%s", request.text)
