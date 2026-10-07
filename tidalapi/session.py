@@ -117,6 +117,10 @@ class Config:
     image_url: str = "https://resources.tidal.com/images/%s/%ix%i.jpg"
     image_url_origin: str = "https://resources.tidal.com/images/%s/origin.jpg"
     item_limit: int
+    #: Stop sending requests for a while after TIDAL answers with a rate limit
+    #: (HTTP 429) or an anti-abuse rejection. While backing off, requests raise
+    #: :class:`.TidalBackoffError` instead of reaching TIDAL.
+    backoff: bool
     quality: str
     video_quality: str
     video_url: str = "https://resources.tidal.com/videos/%s/%ix%i.mp4"
@@ -138,10 +142,12 @@ class Config:
         video_quality: str = media.VideoQuality.default,
         item_limit: int = 1000,
         alac: bool = True,
+        backoff: bool = False,
     ):
         self.quality = quality
         self.video_quality = video_quality
         self.alac = alac
+        self.backoff = backoff
 
         if item_limit > 10000:
             log.warning(
