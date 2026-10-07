@@ -15,6 +15,8 @@
 
 """Offline tests for the OAuth token refresh logic (no TIDAL account needed)."""
 
+import threading
+import time
 from unittest import mock
 
 import tidalapi
@@ -69,3 +71,51 @@ def test_token_refresh_keeps_refresh_token_when_not_rotated():
 
     assert session.access_token == "new-access"
     assert session.refresh_token == "old-refresh"
+
+
+def test_concurrent_expired_requests_refresh_only_once():
+    session = make_session()
+    session.session_id = "sid"
+    session.country_code = "US"
+    post_calls = []
+    post_started = threading.Event()
+
+    def post(url, params):
+        post_calls.append(params["refresh_token"])
+        post_started.set()
+        # Hold the refresh open so the other threads pile up behind it.
+        time.sleep(0.2)
+        return fake_response(
+            json_data={
+                "access_token": "new-access",
+                "expires_in": 3600,
+                "token_type": "Bearer",
+                "refresh_token": "rotated-refresh",
+            }
+        )
+
+    def request(method, url, params=None, data=None, headers=None):
+        if headers["authorization"] == "Bearer old-access":
+            return fake_response(
+                401, {"userMessage": "The token has expired. (Expired on time)"}
+            )
+        return fake_response(200, {"ok": True})
+
+    session.request_session = mock.Mock()
+    session.request_session.post.side_effect = post
+    session.request_session.request.side_effect = request
+
+    results = []
+
+    def worker():
+        results.append(session.request.basic_request("GET", "tracks/1").ok)
+
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+
+    assert results == [True] * 5
+    assert post_calls == ["old-refresh"]
+    assert session.refresh_token == "rotated-refresh"

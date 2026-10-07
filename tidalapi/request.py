@@ -18,6 +18,7 @@
 
 import json
 import logging
+import threading
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -61,6 +62,29 @@ class Requests(object):
         self.session = session
         self.config = session.config
         self.latest_err_response = requests.Response()
+        # Serializes access-token refreshes, see `_refresh_access_token`.
+        self._refresh_lock = threading.Lock()
+
+    def _refresh_access_token(self, stale_access_token: Optional[str]) -> bool:
+        """Refresh the access token, at most once for concurrent callers.
+
+        Requests are often issued from several threads (e.g. the paginated workers). If
+        they all hit an expired token at the same time, each would POST the same
+        refresh token. TIDAL rotates refresh tokens, so every POST after the first
+        would use a token that has just been invalidated.
+
+        :param stale_access_token: The access token the caller's request was sent
+            with. If the session holds a different one by the time the lock is
+            acquired, another thread has already refreshed and no new refresh is made.
+        :return: True if the session holds a valid, refreshed access token.
+        """
+        with self._refresh_lock:
+            if self.session.access_token != stale_access_token:
+                return True
+            refresh_token = self.session.refresh_token
+            if not refresh_token:
+                return False
+            return self.session.token_refresh(refresh_token)
 
     def basic_request(
         self,
@@ -92,10 +116,9 @@ class Requests(object):
         if "User-Agent" not in headers:
             headers["User-Agent"] = self.user_agent
 
-        if self.session.token_type and self.session.access_token is not None:
-            headers["authorization"] = (
-                self.session.token_type + " " + self.session.access_token
-            )
+        sent_access_token = self.session.access_token
+        if self.session.token_type and sent_access_token is not None:
+            headers["authorization"] = self.session.token_type + " " + sent_access_token
         if base_url is None:
             base_url = self.session.config.api_v1_location
 
@@ -116,7 +139,7 @@ class Requests(object):
                 "The token has expired."
             ):
                 log.debug("The access token has expired, trying to refresh it.")
-                refreshed = self.session.token_refresh(refresh_token)
+                refreshed = self._refresh_access_token(sent_access_token)
                 if refreshed:
                     request = self.basic_request(method, url, params, data, headers)
             else:
