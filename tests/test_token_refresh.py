@@ -15,6 +15,7 @@
 
 """Offline tests for the OAuth token refresh logic (no TIDAL account needed)."""
 
+import datetime
 import threading
 import time
 from unittest import mock
@@ -119,3 +120,78 @@ def test_concurrent_expired_requests_refresh_only_once():
     assert results == [True] * 5
     assert post_calls == ["old-refresh"]
     assert session.refresh_token == "rotated-refresh"
+
+
+def _refreshing_session(expiry_time):
+    session = make_session()
+    session.expiry_time = expiry_time
+    session.request_session = mock.Mock()
+    session.request_session.post.return_value = fake_response(
+        json_data={
+            "access_token": "new-access",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        }
+    )
+    session.request_session.request.return_value = fake_response(200, {})
+    return session
+
+
+def test_request_refreshes_expired_token_before_sending():
+    session = _refreshing_session(
+        datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    )
+
+    assert session.request.basic_request("GET", "tracks/1").ok
+
+    session.request_session.post.assert_called_once()
+    sent = session.request_session.request.call_args.kwargs["headers"]
+    assert sent["authorization"] == "Bearer new-access"
+
+
+def test_request_refreshes_token_expiring_within_margin():
+    session = _refreshing_session(
+        datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+    )
+
+    session.request.basic_request("GET", "tracks/1")
+
+    session.request_session.post.assert_called_once()
+
+
+def test_request_does_not_refresh_valid_token():
+    session = _refreshing_session(
+        datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    )
+
+    session.request.basic_request("GET", "tracks/1")
+
+    session.request_session.post.assert_not_called()
+
+
+def test_request_without_expiry_time_does_not_refresh_up_front():
+    session = _refreshing_session(None)
+
+    session.request.basic_request("GET", "tracks/1")
+
+    session.request_session.post.assert_not_called()
+
+
+def test_request_handles_timezone_aware_expiry_time():
+    expired = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(1)
+    session = _refreshing_session(expired)
+
+    session.request.basic_request("GET", "tracks/1")
+
+    session.request_session.post.assert_called_once()
+
+
+def test_failed_proactive_refresh_does_not_fail_the_request():
+    session = _refreshing_session(
+        datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+    )
+    session.request_session.post.return_value = fake_response(
+        400, {"error": "invalid_grant", "error_description": "dead"}
+    )
+
+    assert session.request.basic_request("GET", "tracks/1").ok

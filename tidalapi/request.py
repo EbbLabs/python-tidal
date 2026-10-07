@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """A module containing functions relating to TIDAL api requests."""
 
+import datetime
 import json
 import logging
 import threading
@@ -35,7 +36,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from tidalapi.exceptions import http_error_to_tidal_error
+from tidalapi.exceptions import AuthenticationError, http_error_to_tidal_error
 from tidalapi.types import JsonObj
 
 log = logging.getLogger(__name__)
@@ -46,6 +47,10 @@ Methods = Literal["GET", "POST", "PUT", "DELETE"]
 
 if TYPE_CHECKING:
     from tidalapi.session import Session
+
+
+#: Refresh the access token this long before it expires, so requests don't race the expiry.
+TOKEN_EXPIRY_MARGIN = datetime.timedelta(seconds=60)
 
 
 class Requests(object):
@@ -86,6 +91,22 @@ class Requests(object):
                 return False
             return self.session.token_refresh(refresh_token)
 
+    def _access_token_expired(self) -> bool:
+        """Whether the session's access token is expired, or about to be.
+
+        TIDAL signals an expired token with a `userMessage` that has changed over time,
+        so relying on that alone lets raw 401s reach the caller. The expiry time is
+        checked up front whenever it is known.
+        """
+        expiry_time = self.session.expiry_time
+        if not expiry_time or not self.session.refresh_token:
+            return False
+        if expiry_time.tzinfo is None:
+            now = datetime.datetime.utcnow()
+        else:
+            now = datetime.datetime.now(datetime.timezone.utc)
+        return expiry_time - now <= TOKEN_EXPIRY_MARGIN
+
     def basic_request(
         self,
         method: Methods,
@@ -115,6 +136,15 @@ class Requests(object):
 
         if "User-Agent" not in headers:
             headers["User-Agent"] = self.user_agent
+
+        if self._access_token_expired():
+            log.debug("The access token is about to expire, trying to refresh it.")
+            try:
+                self._refresh_access_token(self.session.access_token)
+            except AuthenticationError as e:
+                # Don't fail the request: the token may still be accepted, and if
+                # it isn't, the expired-token handling below reports the failure.
+                log.warning("Proactive access token refresh failed: %s", e)
 
         sent_access_token = self.session.access_token
         if self.session.token_type and sent_access_token is not None:
