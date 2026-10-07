@@ -266,3 +266,14 @@ def test_enable_hires_twice_keeps_device_client():
     session.client_enable_hires()
 
     assert session._device_client_credentials() == device_client
+
+
+def test_sessions_do_not_share_a_default_config():
+    first = tidalapi.Session()
+    second = tidalapi.Session()
+    device_client_id = second.config.client_id
+
+    first.client_enable_hires()
+
+    assert first.config is not second.config
+    assert second.config.client_id == device_client_id

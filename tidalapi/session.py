@@ -231,8 +231,8 @@ class Session:
     #: A :class:`.User` object containing the currently logged in user.
     user: Optional[Union["FetchedUser", "LoggedInUser", "PlaylistCreator"]] = None
 
-    def __init__(self, config: Config = Config()):
-        self.config = config
+    def __init__(self, config: Optional[Config] = None):
+        self.config = config if config is not None else Config()
         self.request_session = requests.Session()
 
         # Objects for keeping the session across all modules.
