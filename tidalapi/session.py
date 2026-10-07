@@ -244,6 +244,8 @@ class Session:
         self.parse_page = self.page.parse
 
         self.is_pkce = False  # True if current session is PKCE type, otherwise false
+        # The (client_id, client_secret) in use before `client_enable_hires` replaced them
+        self._device_client: Optional[Tuple[str, str]] = None
 
         self.type_conversions: List[TypeRelation] = [
             TypeRelation(
@@ -476,8 +478,22 @@ class Session:
         # self.client_enable_hires()
 
     def client_enable_hires(self):
+        """Swap `config.client_id` and `config.client_secret` for the PKCE pair, which is
+        the only one entitled to hi-res streams.
+
+        The limited input device login (:meth:`login_oauth`) still uses the original
+        client, as TIDAL rejects the PKCE client on the device authorization endpoint.
+        """
+        if self.config.client_id != self.config.client_id_pkce:
+            self._device_client = (self.config.client_id, self.config.client_secret)
         self.config.client_id = self.config.client_id_pkce
         self.config.client_secret = self.config.client_secret_pkce
+
+    def _device_client_credentials(self) -> Tuple[str, str]:
+        """The client_id and client_secret for the limited input device login."""
+        if self._device_client:
+            return self._device_client
+        return self.config.client_id, self.config.client_secret
 
     def pkce_login_url(self) -> str:
         """Returns the Login-URL to login via web browser.
@@ -622,7 +638,8 @@ class Session:
         :rtype: :class:`LinkLogin`
         """
         url = "https://auth.tidal.com/v1/oauth2/device_authorization"
-        params = {"client_id": self.config.client_id, "scope": "r_usr w_usr w_sub"}
+        client_id, _ = self._device_client_credentials()
+        params = {"client_id": client_id, "scope": "r_usr w_usr w_sub"}
 
         request = self.request_session.post(url, params)
 
@@ -698,9 +715,10 @@ class Session:
         """
         expiry: float = link_login.expires_in if until_expiry else 1
         url = self.config.api_oauth2_token
+        client_id, client_secret = self._device_client_credentials()
         params = {
-            "client_id": self.config.client_id,
-            "client_secret": self.config.client_secret,
+            "client_id": client_id,
+            "client_secret": client_secret,
             "device_code": link_login.device_code,
             "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
             "scope": "r_usr w_usr w_sub",

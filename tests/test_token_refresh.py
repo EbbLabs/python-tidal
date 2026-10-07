@@ -224,3 +224,45 @@ def test_session_file_without_expiry_time_still_loads(tmp_path):
     assert loaded.load_session_from_file(session_file)
 
     assert loaded.load_oauth_session.call_args.kwargs["expiry_time"] is None
+
+
+def test_device_login_ignores_hires_client_swap():
+    config = tidalapi.Config()
+    device_client_id = config.client_id
+    device_client_secret = config.client_secret
+    session = tidalapi.Session(config)
+    session.request_session = mock.Mock()
+    session.request_session.post.return_value = fake_response(
+        json_data={
+            "deviceCode": "dc",
+            "userCode": "uc",
+            "verificationUri": "link.tidal.com",
+            "verificationUriComplete": "link.tidal.com/uc",
+            "expiresIn": 300,
+            "interval": 2,
+        }
+    )
+
+    session.client_enable_hires()
+    assert config.client_id == config.client_id_pkce
+
+    link_login = session.get_link_login()
+    sent = session.request_session.post.call_args.args[1]
+    assert sent["client_id"] == device_client_id
+
+    session.request_session.post.return_value = fake_response(json_data={"a": "b"})
+    session._check_link_login(link_login, until_expiry=False)
+    sent = session.request_session.post.call_args.args[1]
+    assert sent["client_id"] == device_client_id
+    assert sent["client_secret"] == device_client_secret
+
+
+def test_enable_hires_twice_keeps_device_client():
+    config = tidalapi.Config()
+    device_client = (config.client_id, config.client_secret)
+    session = tidalapi.Session(config)
+
+    session.client_enable_hires()
+    session.client_enable_hires()
+
+    assert session._device_client_credentials() == device_client
