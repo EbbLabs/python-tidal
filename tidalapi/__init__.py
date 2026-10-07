@@ -17,4 +17,4 @@ from .user import (  # noqa: F401
     User,
 )
 
-__version__ = "0.8.11"
+__version__ = "0.9.0"
