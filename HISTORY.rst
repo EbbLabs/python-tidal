@@ -6,6 +6,7 @@ History
 v0.9.0
 ------
 * (BREAKING!) Drop support for python3.9 and older, python 3.10 or newer is now required - tehkillerbee_
+* Added support for python 3.14 - tehkillerbee_
 * Removed unused runtime dependency `pyaes` - tehkillerbee_
 * Bugfix: Keep the rotated refresh token returned by TIDAL in `token_refresh`, previously users were logged out after a few days - tehkillerbee_
 * Bugfix: Serialize concurrent access token refreshes, so parallel requests no longer refresh with an already invalidated refresh token - tehkillerbee_
