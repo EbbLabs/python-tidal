@@ -80,8 +80,6 @@ def test_get_other(session):
         session.album(327452387),
         session.album(322406553),
     ]
-    other_albums = artist.get_other
-    # artist_item_ids = [item.id for item in other_albums()]
     find_ids(albums, artist.get_other)
 
 
@@ -164,6 +162,5 @@ def find_ids(items, function):
     :param items: A list of items that you expect in the list returned by `function`
     :param function: A function that returns a list of items of the same type as items.
     """
-
     artist_item_ids = [item.id for item in function()]
     assert all(item.id in artist_item_ids for item in items)

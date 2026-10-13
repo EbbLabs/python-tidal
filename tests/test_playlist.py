@@ -114,7 +114,7 @@ def test_playlist_categories(session):
     # Check if playlist is found in list of public playlists
     public_playlists = session.user.public_playlists()
     playlist_ids = [playlist.id for playlist in public_playlists]
-    assert not playlist_id in playlist_ids
+    assert playlist_id not in playlist_ids
     playlist.set_playlist_public()
 
     # Check if playlist is found in list of public playlists
@@ -235,7 +235,6 @@ def test_playlist_move_by_index(session):
     first_track_id = track_ids[0]
     playlist.move_by_index(index=0, position=playlist.num_tracks - 2)
     # Last track(-2) should now match the previous first track
-    tracks = playlist.tracks()
     track_ids = [track.id for track in playlist.tracks()]
     assert track_ids.index(first_track_id) == playlist.num_tracks - 2
     playlist.delete()

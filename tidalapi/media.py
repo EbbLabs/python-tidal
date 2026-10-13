@@ -316,7 +316,7 @@ class Track(Media):
     # Audio quality and metadata
     audio_quality: Optional[str] = None
     audio_modes: Optional[List[str]] = None
-    media_metadata_tags = None
+    media_metadata_tags: Optional[List[str]] = None
 
     # Identification
     index: Optional[int] = None
@@ -396,7 +396,6 @@ class Track(Media):
         :param media_id: TIDAL's identifier of the track
         :return: A :class:`Track` object containing all the information about the track
         """
-
         try:
             request = self.requests.request("GET", "tracks/%s" % media_id)
         except ObjectNotFound as e:
@@ -415,7 +414,8 @@ class Track(Media):
         """Retrieves the URL for a track.
 
         :return: A `str` object containing the direct track URL
-        :raises: A :class:`exceptions.URLNotAvailable` if no URL is available for this track
+        :raises: A :class:`exceptions.URLNotAvailable` if no URL is available for this
+            track
         """
         if self.session.is_pkce:
             raise URLNotAvailable(
@@ -465,7 +465,8 @@ class Track(Media):
         track.
 
         :return: A list of :class:`Tracks <tidalapi.media.Track>`
-        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is
+            available
         """
         params = {"limit": limit}
 
@@ -489,7 +490,8 @@ class Track(Media):
         track.
 
         :return: A :class:`Mix <tidalapi.mix.Mix>`
-        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is
+            available
         """
         try:
             request = self.requests.request("GET", "tracks/%s/mix" % self.id)
@@ -507,7 +509,8 @@ class Track(Media):
 
         :return: A :class:`Stream` object which holds audio file properties and
             parameters needed for streaming via `MPEG-DASH` protocol.
-        :raises: A :class:`exceptions.StreamNotAvailable` if there is no stream available for this track
+        :raises: A :class:`exceptions.StreamNotAvailable` if there is no stream
+            available for this track
         """
         params = {
             "playbackmode": "STREAM",
@@ -532,34 +535,23 @@ class Track(Media):
 
     @property
     def is_hi_res_lossless(self) -> bool:
-        try:
-            if (
-                self.media_metadata_tags
-                and MediaMetadataTags.hi_res_lossless in self.media_metadata_tags
-            ):
-                return True
-        except:
-            pass
-        return False
+        return (
+            self.media_metadata_tags is not None
+            and MediaMetadataTags.hi_res_lossless in self.media_metadata_tags
+        )
 
     @property
     def is_lossless(self) -> bool:
-        try:
-            if (
-                self.media_metadata_tags
-                and MediaMetadataTags.lossless in self.media_metadata_tags
-            ):
-                return True
-        except:
-            pass
-        return False
+        return (
+            self.media_metadata_tags is not None
+            and MediaMetadataTags.lossless in self.media_metadata_tags
+        )
 
     @property
     def is_dolby_atmos(self) -> bool:
-        try:
-            return True if AudioMode.dolby_atmos in self.audio_modes else False
-        except:
-            return False
+        return (
+            self.audio_modes is not None and AudioMode.dolby_atmos in self.audio_modes
+        )
 
 
 class Stream:
@@ -946,9 +938,9 @@ class Video(Media):
 
         :param media_id: TIDAL's identifier of the video
         :return: A :class:`Video` object containing all the information about the video.
-        :raises: A :class:`exceptions.ObjectNotFound` if video is not found or unavailable
+        :raises: A :class:`exceptions.ObjectNotFound` if video is not found or
+            unavailable
         """
-
         try:
             request = self.requests.request("GET", "videos/%s" % self.id)
         except ObjectNotFound as e:
@@ -967,7 +959,8 @@ class Video(Media):
         """Retrieves the URL to the m3u8 video playlist.
 
         :return: A `str` object containing the direct video URL
-        :raises: A :class:`exceptions.URLNotAvailable` if no URL is available for this video
+        :raises: A :class:`exceptions.URLNotAvailable` if no URL is available for this
+            video
         """
         params = {
             "urlusagemode": "STREAM",

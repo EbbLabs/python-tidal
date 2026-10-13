@@ -209,8 +209,10 @@ class Playlist:
 
         :param limit: The amount of items you want returned.
         :param offset: The index of the first item you want included.
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the playlist tracks. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the playlist tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A list of :class:`Tracks <.Track>`
         """
         params = {
@@ -239,9 +241,12 @@ class Playlist:
     ) -> List["Playlist"]:
         """Get the tracks in the playlist, using pagination.
 
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite tracks.
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the user favorite tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing
+            the favorite tracks.
         """
         count = self.get_tracks_count()
         return get_items(self.tracks, count, order, order_direction)
@@ -257,8 +262,10 @@ class Playlist:
 
         :param limit: The amount of items you want, up to 100.
         :param offset: The index of the first item you want returned
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the playlist items. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the playlist items. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :return: A list of :class:`Tracks<.Track>` and :class:`Videos<.Video>`
         """
         params = {"limit": limit, "offset": offset}
@@ -286,7 +293,6 @@ class Playlist:
 
         Original sizes: 160x160, 320x320, 480x480, 640x640, 750x750, 1080x1080
         """
-
         if dimensions not in [160, 320, 480, 640, 750, 1080]:
             raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
         if self.square_picture:
@@ -309,7 +315,6 @@ class Playlist:
 
         Valid sizes: 160x107, 480x320, 750x500, 1080x720
         """
-
         if (width, height) not in [(160, 107), (480, 320), (750, 500), (1080, 720)]:
             raise ValueError("Invalid resolution {} x {}".format(width, height))
         if self.picture is None:

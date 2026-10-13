@@ -74,8 +74,9 @@ class Artist:
                 self.request.map_json(request.json(), parse=self.parse_artist)
 
     def parse_artist(self, json_obj: JsonObj) -> "Artist":
-        """Parses a TIDAL artist, replaces the current :class:`Artist` object. Made for
-        use within the python tidalapi module.
+        """Parses a TIDAL artist, replaces the current :class:`Artist` object.
+
+        Made for use within the python tidalapi module.
 
         :param json_obj: :class:`JsonObj` containing the artist metadata
         :return: Returns a copy of the :class:`Artist` object
@@ -113,7 +114,8 @@ class Artist:
         """Parses a list of TIDAL artists, returns a list of :class:`Artist` objects
         Made for use within the python tidalapi module.
 
-        :param List[JsonObj] json_obj: List of :class:`JsonObj` containing the artist metadata for each artist
+        :param List[JsonObj] json_obj: List of :class:`JsonObj` containing the artist
+        metadata for each artist
         :return: Returns a list of :class:`Artist` objects
         """
         return list(map(self.parse_artist, json_obj))
@@ -258,9 +260,9 @@ class Artist:
         this artist.
 
         :return: A :class:`Mix <tidalapi.mix.Mix>`
-        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is available
+        :raises: A :class:`exceptions.MetadataNotAvailable` if no track radio mix is
+            available
         """
-
         try:
             request = self.request.request("GET", "artists/%s/mix" % self.id)
         except ObjectNotFound:
@@ -273,8 +275,9 @@ class Artist:
             return self.session.mix(json_obj.get("id"))
 
     def items(self) -> List[NoReturn]:
-        """The artist page does not supply any items. This only exists for symmetry with
-        other model types.
+        """The artist page does not supply any items.
+
+        This only exists for symmetry with other model types.
 
         :return: An empty list.
         """
