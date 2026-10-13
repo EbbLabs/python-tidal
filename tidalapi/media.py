@@ -236,13 +236,17 @@ class Media:
         :param album: The (optional) album to use, instead of parsing the JSON object
         :return:
         """
-        artists = self.session.parse_artists(json_obj["artists"])
+        # The artists can be missing or empty, e.g. for tracks that were removed
+        artists_json = json_obj.get("artists")
+        artists = self.session.parse_artists(artists_json) if artists_json else []
 
         # Sometimes the artist field is not filled, example: 62300893
-        if "artist" in json_obj:
+        if json_obj.get("artist") is not None:
             artist = self.session.parse_artist(json_obj["artist"])
-        else:
+        elif artists:
             artist = artists[0]
+        else:
+            artist = None
 
         if album is None and json_obj["album"]:
             album = self.session.album().parse(json_obj["album"], artist, artists)
@@ -338,14 +342,14 @@ class Track(Media):
 
     def parse_track(self, json_obj: JsonObj, album: Optional[Album] = None) -> Track:
         Media.parse(self, json_obj, album)
-        self.pay_to_stream = json_obj.get("payToStream")
-        self.premium_streaming_only = json_obj.get("premiumStreamingOnly")
-        self.editable = json_obj.get("editable")
-        self.upload = json_obj.get("upload")
-        self.spotlighted = json_obj.get("spotlighted")
+        self.pay_to_stream = json_obj.get("payToStream", False)
+        self.premium_streaming_only = json_obj.get("premiumStreamingOnly", False)
+        self.editable = json_obj.get("editable", False)
+        self.upload = json_obj.get("upload", False)
+        self.spotlighted = json_obj.get("spotlighted", False)
 
         # Generate share URLs from track ID and album (if it exists)
-        self.url = json_obj.get("url")
+        self.url = json_obj.get("url", "")
         if self.album:
             self.listen_url = f"{self.session.config.listen_base_url}/album/{self.album.id}/track/{self.id}"
         else:
@@ -368,7 +372,7 @@ class Track(Media):
             self.date_added = self.user_date_added
             self.description = json_obj.get("description")
             self.version = json_obj.get("version") if json_obj.get("version") else None
-            self.copyright = json_obj.get("copyright")
+            self.copyright = json_obj.get("copyright", "")
 
             self.bpm = json_obj.get("bpm")
             self.key = json_obj.get("key")

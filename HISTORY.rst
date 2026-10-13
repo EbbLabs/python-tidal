@@ -15,6 +15,8 @@ v0.9.0
 * Added `AbuseDetected`, raised when TIDAL answers with an anti-abuse HTTP 403 - tehkillerbee_
 * Added `Config(backoff=...)`, enabled by default: stop sending requests after a rate limit or abuse response and raise `TidalBackoffError` until it has passed. Pass `backoff=False` to disable - tehkillerbee_
 * Bugfix: Non-JSON error responses and `Retry-After` given as a date no longer break error handling - tehkillerbee_
+* Bugfix: Parsing tracks and albums no longer fails when TIDAL returns no or empty artist information - tehkillerbee_
+* Parsed `Track` flags (`pay_to_stream`, `premium_streaming_only`, `editable`, `upload`, `spotlighted`) are now `False` instead of `None` when TIDAL omits them, and `url` is an empty string - tehkillerbee_
 
 v0.8.11
 --------

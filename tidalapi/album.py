@@ -103,11 +103,14 @@ class Album:
         artists: Optional[List["Artist"]] = None,
     ) -> "Album":
         if artists is None:
-            artists = self.session.parse_artists(json_obj["artists"])
+            # The artists can be missing or empty, e.g. for removed albums
+            artists_json = json_obj.get("artists")
+            artists = self.session.parse_artists(artists_json) if artists_json else []
 
         # Sometimes the artist field is not filled, an example is 140196345
-        if "artist" not in json_obj:
-            artist = artists[0]
+        if json_obj.get("artist") is None:
+            # Without any artist information, keep the artist we were given (if any)
+            artist = artists[0] if artists else artist
         elif artist is None:
             artist = self.session.parse_artist(json_obj["artist"])
 
