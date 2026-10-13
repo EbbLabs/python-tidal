@@ -19,8 +19,9 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 from tidalapi.types import ItemOrder, JsonObj, OrderDirection
@@ -48,32 +49,32 @@ class Playlist:
     """An object containing various data about a playlist and methods to work with
     them."""
 
-    id: Optional[str] = None
-    trn: Optional[str] = None
-    name: Optional[str] = None
+    id: str | None = None
+    trn: str | None = None
+    name: str | None = None
     num_tracks: int = -1
     num_videos: int = -1
-    creator: Optional[Union["Artist", "User"]] = None
-    description: Optional[str] = None
+    creator: Artist | User | None = None
+    description: str | None = None
     duration: int = -1
-    last_updated: Optional[datetime] = None
-    created: Optional[datetime] = None
+    last_updated: datetime | None = None
+    created: datetime | None = None
     type = None
-    public: Optional[bool] = False
-    popularity: Optional[int] = None
-    promoted_artists: Optional[List["Artist"]] = None
-    last_item_added_at: Optional[datetime] = None
-    picture: Optional[str] = None
-    square_picture: Optional[str] = None
-    user_date_added: Optional[datetime] = None
-    _etag: Optional[str] = None
+    public: bool | None = False
+    popularity: int | None = None
+    promoted_artists: list[Artist] | None = None
+    last_item_added_at: datetime | None = None
+    picture: str | None = None
+    square_picture: str | None = None
+    user_date_added: datetime | None = None
+    _etag: str | None = None
 
     # Direct URL to https://listen.tidal.com/playlist/<playlist_id>
     listen_url: str = ""
     # Direct URL to https://tidal.com/browse/playlist/<playlist_id>
     share_url: str = ""
 
-    def __init__(self, session: "Session", playlist_id: Optional[str]):
+    def __init__(self, session: Session, playlist_id: str | None):
         self.id = playlist_id
         self.session = session
         self.request = session.request
@@ -82,7 +83,7 @@ class Playlist:
             try:
                 request = self.request.request("GET", self._base_url % self.id)
             except ObjectNotFound as e:
-                e.args = ("Playlist with id %s not found" % playlist_id,)
+                e.args = (f"Playlist with id {playlist_id} not found",)
                 raise e
             except TooManyRequests as e:
                 e.args = ("Playlist unavailable",)
@@ -91,7 +92,7 @@ class Playlist:
                 self._etag = request.headers["etag"]
                 self.parse(request.json())
 
-    def parse(self, obj: JsonObj) -> "Playlist":
+    def parse(self, obj: JsonObj) -> Playlist:
         """Parses a playlist from tidal, replaces the current playlist object.
 
         :param obj: Json data returned from api.tidal.com containing a playlist
@@ -149,7 +150,7 @@ class Playlist:
 
         return copy.copy(self)
 
-    def factory(self) -> Union["Playlist", "UserPlaylist"]:
+    def factory(self) -> Playlist | UserPlaylist:
         if (
             self.id
             and self.creator
@@ -160,7 +161,7 @@ class Playlist:
 
         return self
 
-    def parse_factory(self, json_obj: JsonObj) -> "Playlist":
+    def parse_factory(self, json_obj: JsonObj) -> Playlist:
         self.parse(json_obj)
         return copy.copy(self.factory())
 
@@ -200,11 +201,11 @@ class Playlist:
 
     def tracks(
         self,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         offset: int = 0,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Track"]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Track]:
         """Gets the playlists' tracks from TIDAL.
 
         :param limit: The amount of items you want returned.
@@ -236,9 +237,9 @@ class Playlist:
 
     def tracks_paginated(
         self,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Playlist"]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Playlist]:
         """Get the tracks in the playlist, using pagination.
 
         :param order: Optional; A :class:`ItemOrder` describing the ordering type when
@@ -255,9 +256,9 @@ class Playlist:
         self,
         limit: int = 100,
         offset: int = 0,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List[Union["Track", "Video"]]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Track | Video]:
         """Fetches up to the first 100 items, including tracks and videos.
 
         :param limit: The amount of items you want, up to 100.
@@ -294,7 +295,7 @@ class Playlist:
         Original sizes: 160x160, 320x320, 480x480, 640x640, 750x750, 1080x1080
         """
         if dimensions not in [160, 320, 480, 640, 750, 1080]:
-            raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
+            raise ValueError(f"Invalid resolution {dimensions} x {dimensions}")
         if self.square_picture:
             return self.session.config.image_url % (
                 self.square_picture.replace("-", "/"),
@@ -316,7 +317,7 @@ class Playlist:
         Valid sizes: 160x107, 480x320, 750x500, 1080x720
         """
         if (width, height) not in [(160, 107), (480, 320), (750, 500), (1080, 720)]:
-            raise ValueError("Invalid resolution {} x {}".format(width, height))
+            raise ValueError(f"Invalid resolution {width} x {height}")
         if self.picture is None:
             raise AttributeError("No picture available")
         return self.session.config.image_url % (
@@ -330,14 +331,14 @@ class Folder:
     """An object containing various data about a folder and methods to work with
     them."""
 
-    trn: Optional[str] = None
-    id: Optional[str] = None
-    parent_folder_id: Optional[str] = None
-    name: Optional[str] = None
-    parent: Optional[str] = None  # TODO Determine the correct type of the parent
-    added: Optional[datetime] = None
-    created: Optional[datetime] = None
-    last_modified: Optional[datetime] = None
+    trn: str | None = None
+    id: str | None = None
+    parent_folder_id: str | None = None
+    name: str | None = None
+    parent: str | None = None  # TODO Determine the correct type of the parent
+    added: datetime | None = None
+    created: datetime | None = None
+    last_modified: datetime | None = None
     total_number_of_items: int = 0
 
     # Direct URL to https://listen.tidal.com/folder/<folder_id>
@@ -345,8 +346,8 @@ class Folder:
 
     def __init__(
         self,
-        session: "Session",
-        folder_id: Optional[str],
+        session: Session,
+        folder_id: str | None,
         parent_folder_id: str = "root",
     ):
         self.id = folder_id
@@ -401,7 +402,7 @@ class Folder:
                 self.parse(item)
                 return
 
-    def parse(self, json_obj: JsonObj) -> "Folder":
+    def parse(self, json_obj: JsonObj) -> Folder:
         """Parses a folder from tidal, replaces the current folder object.
 
         :param json_obj: Json data returned from api.tidal.com containing a folder
@@ -454,9 +455,7 @@ class Folder:
             params=params,
         ).ok
 
-    def items(
-        self, offset: int = 0, limit: int = 50
-    ) -> List[Union["Playlist", "UserPlaylist"]]:
+    def items(self, offset: int = 0, limit: int = 50) -> list[Playlist | UserPlaylist]:
         """Return the items in the folder.
 
         :param offset: Optional; The index of the first item to be returned. Default: 0
@@ -481,7 +480,7 @@ class Folder:
         if json_obj.get("items"):
             playlists = {"items": [item["data"] for item in json_obj.get("items")]}
             return cast(
-                List[Union["Playlist", "UserPlaylist"]],
+                list[Union["Playlist", "UserPlaylist"]],
                 self.request.map_json(playlists, parse=self.playlist.parse_factory),
             )
         else:
@@ -539,9 +538,7 @@ class UserPlaylist(Playlist):
         self._etag = request.headers["etag"]
         self.request.map_json(request.json(), parse=self.parse)
 
-    def edit(
-        self, title: Optional[str] = None, description: Optional[str] = None
-    ) -> bool:
+    def edit(self, title: str | None = None, description: str | None = None) -> bool:
         """Edit UserPlaylist title & description.
 
         :param title: Playlist title
@@ -556,7 +553,7 @@ class UserPlaylist(Playlist):
         data = {"title": title, "description": description}
         return self.request.request("POST", self._base_url % self.id, data=data).ok
 
-    def delete_by_id(self, media_ids: List[str]) -> bool:
+    def delete_by_id(self, media_ids: list[str]) -> bool:
         """Delete one or more items from the UserPlaylist.
 
         :param media_ids: Lists of Media IDs to remove.
@@ -570,11 +567,11 @@ class UserPlaylist(Playlist):
 
     def add(
         self,
-        media_ids: List[str],
+        media_ids: list[str],
         allow_duplicates: bool = False,
         position: int = -1,
         limit: int = 100,
-    ) -> List[int]:
+    ) -> list[int]:
         """Add one or more items to the UserPlaylist.
 
         :param media_ids: List of Media IDs to add.
@@ -613,7 +610,7 @@ class UserPlaylist(Playlist):
 
     def merge(
         self, playlist: str, allow_duplicates: bool = False, allow_missing: bool = True
-    ) -> List[int]:
+    ) -> list[int]:
         """Add (merge) items from a playlist with the current playlist.
 
         :param playlist: Playlist UUID to be merged in the current playlist
@@ -815,4 +812,4 @@ class UserPlaylist(Playlist):
 
         :return: True, if successful.
         """
-        return self.request.request("DELETE", path="playlists/%s" % self.id).ok
+        return self.request.request("DELETE", path=f"playlists/{self.id}").ok

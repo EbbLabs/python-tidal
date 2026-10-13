@@ -18,7 +18,7 @@
 import copy
 import functools
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import dateutil.parser
 
@@ -42,43 +42,43 @@ class Album:
     name, cover and video cover. TIDAL does this to reduce the network load.
     """
 
-    id: Optional[int] = -1
-    name: Optional[str] = None
+    id: int | None = -1
+    name: str | None = None
     cover = None
     video_cover = None
     type = None
 
-    duration: Optional[int] = -1
-    available: Optional[bool] = False
-    ad_supported_ready: Optional[bool] = False
-    dj_ready: Optional[bool] = False
-    allow_streaming: Optional[bool] = False
-    premium_streaming_only: Optional[bool] = False
-    num_tracks: Optional[int] = -1
-    num_videos: Optional[int] = -1
-    num_volumes: Optional[int] = -1
-    tidal_release_date: Optional[datetime] = None
-    release_date: Optional[datetime] = None
+    duration: int | None = -1
+    available: bool | None = False
+    ad_supported_ready: bool | None = False
+    dj_ready: bool | None = False
+    allow_streaming: bool | None = False
+    premium_streaming_only: bool | None = False
+    num_tracks: int | None = -1
+    num_videos: int | None = -1
+    num_volumes: int | None = -1
+    tidal_release_date: datetime | None = None
+    release_date: datetime | None = None
     copyright = None
     upc = None
     version = None
-    explicit: Optional[bool] = True
-    universal_product_number: Optional[int] = -1
-    popularity: Optional[int] = -1
-    user_date_added: Optional[datetime] = None
-    audio_quality: Optional[str] = ""
-    audio_modes: Optional[List[str]] = [""]
-    media_metadata_tags: Optional[List[str]] = [""]
+    explicit: bool | None = True
+    universal_product_number: int | None = -1
+    popularity: int | None = -1
+    user_date_added: datetime | None = None
+    audio_quality: str | None = ""
+    audio_modes: list[str] | None = [""]
+    media_metadata_tags: list[str] | None = [""]
 
     artist: Optional["Artist"] = None
-    artists: Optional[List["Artist"]] = None
+    artists: list["Artist"] | None = None
 
     # Direct URL to https://listen.tidal.com/album/<album_id>
     listen_url: str = ""
     # Direct URL to https://tidal.com/browse/album/<album_id>
     share_url: str = ""
 
-    def __init__(self, session: "Session", album_id: Optional[str]):
+    def __init__(self, session: "Session", album_id: str | None):
         self.session = session
         self.request = session.request
         self.artist = session.artist()
@@ -86,9 +86,9 @@ class Album:
 
         if self.id:
             try:
-                request = self.request.request("GET", "albums/%s" % self.id)
+                request = self.request.request("GET", f"albums/{self.id}")
             except ObjectNotFound as e:
-                e.args = ("Album with id %s not found" % self.id,)
+                e.args = (f"Album with id {self.id} not found",)
                 raise e
             except TooManyRequests as e:
                 e.args = ("Album unavailable",)
@@ -100,7 +100,7 @@ class Album:
         self,
         json_obj: JsonObj,
         artist: Optional["Artist"] = None,
-        artists: Optional[List["Artist"]] = None,
+        artists: list["Artist"] | None = None,
     ) -> "Album":
         if artists is None:
             # The artists can be missing or empty, e.g. for removed albums
@@ -165,7 +165,7 @@ class Album:
         return copy.copy(self)
 
     @property
-    def year(self) -> Optional[int]:
+    def year(self) -> int | None:
         """Get the year using :class:`available_release_date`
 
         :return: An :any:`python:int` containing the year the track was released
@@ -173,7 +173,7 @@ class Album:
         return self.available_release_date.year if self.available_release_date else None
 
     @property
-    def available_release_date(self) -> Optional[datetime]:
+    def available_release_date(self) -> datetime | None:
         """Get the release date if it's available, otherwise get the day it was released
         on TIDAL.
 
@@ -188,10 +188,10 @@ class Album:
 
     def tracks(
         self,
-        limit: Optional[int] = None,
+        limit: int | None = None,
         offset: int = 0,
         sparse_album: bool = False,
-    ) -> List["Track"]:
+    ) -> list["Track"]:
         """Returns the tracks in classes album.
 
         :param limit: The amount of items you want returned.
@@ -211,14 +211,14 @@ class Album:
             )
 
         tracks = self.request.map_request(
-            "albums/%s/tracks" % self.id, params, parse=parse_track_callable
+            f"albums/{self.id}/tracks", params, parse=parse_track_callable
         )
         assert isinstance(tracks, list)
-        return cast(List["Track"], tracks)
+        return cast(list["Track"], tracks)
 
     def items(
         self, limit: int = 100, offset: int = 0, sparse_album: bool = False
-    ) -> List[Union["Track", "Video"]]:
+    ) -> list[Union["Track", "Video"]]:
         """Gets the first 'limit' tracks and videos in the album from TIDAL.
 
         :param limit: The number of items you want to retrieve
@@ -238,13 +238,13 @@ class Album:
             )
 
         items = self.request.map_request(
-            "albums/%s/items" % self.id, params=params, parse=parse_media_callable
+            f"albums/{self.id}/items", params=params, parse=parse_media_callable
         )
         assert isinstance(items, list)
-        return cast(List[Union["Track", "Video"]], items)
+        return cast(list[Union["Track", "Video"]], items)
 
     def image(
-        self, dimensions: Union[int, str] = 320, default: str = DEFAULT_ALBUM_IMG
+        self, dimensions: int | str = 320, default: str = DEFAULT_ALBUM_IMG
     ) -> str:
         """A url to an album image cover.
 
@@ -255,7 +255,7 @@ class Album:
         Valid resolutions: 80x80, 160x160, 320x320, 640x640, 1280x1280, 3000x3000 (origin)
         """
         if dimensions not in [80, 160, 320, 640, 1280, "origin"]:
-            raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
+            raise ValueError(f"Invalid resolution {dimensions} x {dimensions}")
 
         if dimensions == "origin":
             if not self.cover:
@@ -280,7 +280,7 @@ class Album:
                     dimensions,
                 )
 
-    def video(self, dimensions: Union[int, str] = 320) -> str:
+    def video(self, dimensions: int | str = 320) -> str:
         """Creates a url to an mp4 video cover for the album.
 
         Valid resolutions: 80x80, 160x160, 320x320, 640x640, 1280x1280
@@ -293,7 +293,7 @@ class Album:
             raise AttributeError("This album does not have a video cover.")
 
         if dimensions not in [80, 160, 320, 640, 1280, "origin"]:
-            raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
+            raise ValueError(f"Invalid resolution {dimensions} x {dimensions}")
 
         if dimensions == "origin":
             return self.session.config.video_url_origin % (
@@ -314,7 +314,7 @@ class Album:
         """
         return self.session.page.get("pages/album", params={"albumId": self.id})
 
-    def similar(self) -> List["Album"]:
+    def similar(self) -> list["Album"]:
         """Retrieve albums similar to the current one.
 
         MetadataNotAvailable is raised, when no similar albums exist.
@@ -322,7 +322,7 @@ class Album:
         :return: A :any:`list` of similar albums
         """
         try:
-            request = self.request.request("GET", "albums/%s/similar" % self.id)
+            request = self.request.request("GET", f"albums/{self.id}/similar")
         except ObjectNotFound:
             raise MetadataNotAvailable("No similar albums exist for this album")
         except TooManyRequests as e:
@@ -333,7 +333,7 @@ class Album:
                 request.json(), parse=self.session.parse_album
             )
             assert isinstance(albums, list)
-            return cast(List["Album"], albums)
+            return cast(list["Album"], albums)
 
     def review(self) -> str:
         """Retrieve the album review.
@@ -341,9 +341,7 @@ class Album:
         :return: A :class:`str` containing the album review, with wimp links
         :raises: :class:`requests.HTTPError` if there isn't a review yet
         """
-        review = self.request.request("GET", "albums/%s/review" % self.id).json()[
-            "text"
-        ]
+        review = self.request.request("GET", f"albums/{self.id}/review").json()["text"]
         assert isinstance(review, str)
         return review
 

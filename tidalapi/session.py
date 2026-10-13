@@ -27,19 +27,15 @@ import os
 import random
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    List,
     Literal,
-    Optional,
-    Tuple,
     TypedDict,
-    Union,
     cast,
     no_type_check,
 )
@@ -62,7 +58,7 @@ if TYPE_CHECKING:
     from tidalapi.user import FetchedUser, LoggedInUser, PlaylistCreator
 
 log = logging.getLogger(__name__)
-SearchTypes: List[Optional[Any]] = [
+SearchTypes: list[Any | None] = [
     artist.Artist,
     album.Album,
     media.Track,
@@ -199,9 +195,9 @@ class Case(Enum):
     scream = id
     lower = id
 
-    identifier: List[str]
-    type: List[Union[object, None]]
-    parse: List[Callable[..., Any]]
+    identifier: list[str]
+    type: list[object | None]
+    parse: list[Callable[..., Any]]
 
 
 TypeConversionKeys = Literal["identifier", "type", "parse"]
@@ -210,38 +206,38 @@ TypeConversionKeys = Literal["identifier", "type", "parse"]
 @dataclass
 class TypeRelation:
     identifier: str
-    type: Optional[Any]
+    type: Any | None
     parse: Callable[..., Any]
 
 
 class SearchResults(TypedDict):
-    artists: List[artist.Artist]
-    albums: List[album.Album]
-    tracks: List[media.Track]
-    videos: List[media.Video]
-    playlists: List[Union[playlist.Playlist, playlist.UserPlaylist]]
-    top_hit: Optional[List[Any]]
+    artists: list[artist.Artist]
+    albums: list[album.Album]
+    tracks: list[media.Track]
+    videos: list[media.Video]
+    playlists: list[playlist.Playlist | playlist.UserPlaylist]
+    top_hit: list[Any] | None
 
 
 class Session:
     """Object for interacting with the TIDAL api and."""
 
     #: The TIDAL access token, this is what you use with load_oauth_session
-    access_token: Optional[str] = None
+    access_token: str | None = None
     #: A :class:`datetime` object containing the date the access token will expire
-    expiry_time: Optional[datetime.datetime] = None
+    expiry_time: datetime.datetime | None = None
     #: A refresh token for retrieving a new access token through refresh_token
-    refresh_token: Optional[str] = None
+    refresh_token: str | None = None
     #: The type of access token, e.g. Bearer
-    token_type: Optional[str] = None
+    token_type: str | None = None
     #: The session id for a TIDAL session, you also need this to use load_oauth_session
-    session_id: Optional[str] = None
-    country_code: Optional[str] = None
-    locale: Optional[str] = None
+    session_id: str | None = None
+    country_code: str | None = None
+    locale: str | None = None
     #: A :class:`.User` object containing the currently logged in user.
-    user: Optional[Union["FetchedUser", "LoggedInUser", "PlaylistCreator"]] = None
+    user: FetchedUser | LoggedInUser | PlaylistCreator | None = None
 
-    def __init__(self, config: Optional[Config] = None):
+    def __init__(self, config: Config | None = None):
         self.config = config if config is not None else Config()
         self.request_session = requests.Session()
 
@@ -255,9 +251,9 @@ class Session:
 
         self.is_pkce = False  # True if current session is PKCE type, otherwise false
         # The (client_id, client_secret) in use before `client_enable_hires` replaced them
-        self._device_client: Optional[Tuple[str, str]] = None
+        self._device_client: tuple[str, str] | None = None
 
-        self.type_conversions: List[TypeRelation] = [
+        self.type_conversions: list[TypeRelation] = [
             TypeRelation(
                 identifier=identifier, type=type, parse=cast(Callable[..., Any], parse)
             )
@@ -287,7 +283,7 @@ class Session:
         return self.album().parse(obj)
 
     def parse_track(
-        self, obj: JsonObj, album: Optional[album.Album] = None
+        self, obj: JsonObj, album: album.Album | None = None
     ) -> media.Track:
         """Parse an album from the given response."""
         return self.track().parse_track(obj, album)
@@ -297,8 +293,8 @@ class Session:
         return self.video().parse_video(obj)
 
     def parse_media(
-        self, obj: JsonObj, album: Optional[album.Album] = None
-    ) -> Union[media.Track, media.Video]:
+        self, obj: JsonObj, album: album.Album | None = None
+    ) -> media.Track | media.Video:
         """Parse a media type (track, video) from the given response."""
         return self.track().parse_media(obj, album)
 
@@ -306,7 +302,7 @@ class Session:
         """Parse an artist from the given response."""
         return self.artist().parse_artist(obj)
 
-    def parse_artists(self, obj: List[JsonObj]) -> List[artist.Artist]:
+    def parse_artists(self, obj: list[JsonObj]) -> list[artist.Artist]:
         """Parse an artist from the given response."""
         return self.artist().parse_artists(obj)
 
@@ -334,7 +330,7 @@ class Session:
         output: TypeConversionKeys = "identifier",
         case: Case = Case.lower,
         suffix: bool = True,
-    ) -> Union[str, Callable[..., Any]]:
+    ) -> str | Callable[..., Any]:
         type_relations = next(
             x for x in self.type_conversions if getattr(x, search_type) == search
         )
@@ -354,8 +350,8 @@ class Session:
     def load_session(
         self,
         session_id: str,
-        country_code: Optional[str] = None,
-        user_id: Optional[int] = None,
+        country_code: str | None = None,
+        user_id: int | None = None,
     ) -> bool:
         """Establishes TIDAL login details using a previous session id.
 
@@ -387,9 +383,9 @@ class Session:
         self,
         token_type: str,
         access_token: str,
-        refresh_token: Optional[str] = None,
-        expiry_time: Optional[datetime.datetime] = None,
-        is_pkce: Optional[bool] = False,
+        refresh_token: str | None = None,
+        expiry_time: datetime.datetime | None = None,
+        is_pkce: bool | None = False,
     ) -> bool:
         """Login to TIDAL using details from a previous OAuth login, automatically
         refreshes expired access tokens if refresh_token is supplied as well.
@@ -423,7 +419,7 @@ class Session:
     def login_session_file(
         self,
         session_file: Path,
-        do_pkce: Optional[bool] = False,
+        do_pkce: bool | None = False,
         fn_print: Callable[[str], None] = print,
     ) -> bool:
         """Logs in to the TIDAL api using an existing OAuth/PKCE session file.
@@ -485,7 +481,7 @@ class Session:
         # Get redirect URL from user input.
         url_redirect: str = input("Paste 'Ooops' page URL here and press <ENTER>:")
         # Query for auth tokens
-        json: dict[str, Union[str, int]] = self.pkce_get_auth_token(url_redirect)
+        json: dict[str, str | int] = self.pkce_get_auth_token(url_redirect)
 
         # Parse and set tokens.
         self.process_auth_token(json, is_pkce_token=True)
@@ -505,7 +501,7 @@ class Session:
         self.config.client_id = self.config.client_id_pkce
         self.config.client_secret = self.config.client_secret_pkce
 
-    def _device_client_credentials(self) -> Tuple[str, str]:
+    def _device_client_credentials(self) -> tuple[str, str]:
         """The client_id and client_secret for the limited input device login."""
         if self._device_client:
             return self._device_client
@@ -531,7 +527,7 @@ class Session:
 
         return self.config.api_pkce_auth + "?" + urlencode(params)
 
-    def pkce_get_auth_token(self, url_redirect: str) -> dict[str, Union[str, int]]:
+    def pkce_get_auth_token(self, url_redirect: str) -> dict[str, str | int]:
         """Parses the redirect url to extract access and refresh tokens.
 
         :param url_redirect: URL of the 'Ooops' page, where the user was redirected to
@@ -569,7 +565,7 @@ class Session:
 
         # Parse the JSON response.
         try:
-            token: dict[str, Union[str, int]] = response.json()
+            token: dict[str, str | int] = response.json()
         except requests.exceptions.JSONDecodeError:
             raise Exception("Wrong one-time authorization code", response)
 
@@ -588,7 +584,7 @@ class Session:
         fn_print(text.format(login.verification_uri_complete, login.expires_in))
         future.result()
 
-    def login_oauth(self) -> Tuple[LinkLogin, concurrent.futures.Future[Any]]:
+    def login_oauth(self) -> tuple[LinkLogin, concurrent.futures.Future[Any]]:
         """Login to TIDAL with a remote link for limited input devices.
 
         The function will return everything you need to log in through a web browser, and will return
@@ -690,7 +686,7 @@ class Session:
         return result_process
 
     def process_auth_token(
-        self, json: dict[str, Union[str, int]], is_pkce_token: bool = True
+        self, json: dict[str, str | int], is_pkce_token: bool = True
     ) -> bool:
         """Parses the authorization response and sets the token values to the specific
         variables for further usage.
@@ -827,7 +823,7 @@ class Session:
     def search(
         self,
         query: str,
-        models: Optional[List[Optional[Any]]] = None,
+        models: list[Any | None] | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> SearchResults:
@@ -849,7 +845,7 @@ class Session:
         if not models:
             models = SearchTypes
 
-        types: List[str] = []
+        types: list[str] = []
         # This converts the specified TIDAL models in the models list into the text versions so we can parse it.
         for model in models:
             if model not in SearchTypes:
@@ -891,12 +887,12 @@ class Session:
         if self.user is None or not self.user.id or not self.session_id:
             return False
         return self.request.basic_request(
-            "GET", "users/%s/subscription" % self.user.id
+            "GET", f"users/{self.user.id}/subscription"
         ).ok
 
     def playlist(
-        self, playlist_id: Optional[str] = None
-    ) -> Union[playlist.Playlist, playlist.UserPlaylist]:
+        self, playlist_id: str | None = None
+    ) -> playlist.Playlist | playlist.UserPlaylist:
         """Function to create a playlist object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Playlist(session=session,
         playlist_id=playlist_id) <.Playlist>` internally.
@@ -912,7 +908,7 @@ class Session:
             log.warning("Playlist '%s' is unavailable", playlist_id)
             raise
 
-    def folder(self, folder_id: Optional[str] = None) -> playlist.Folder:
+    def folder(self, folder_id: str | None = None) -> playlist.Folder:
         """Function to create a Folder object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Folder(session=session, folder_id=track_id)
         <.Folder>` internally.
@@ -928,7 +924,7 @@ class Session:
             raise
 
     def track(
-        self, track_id: Optional[str] = None, with_album: bool = False
+        self, track_id: str | None = None, with_album: bool = False
     ) -> media.Track:
         """Function to create a Track object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Track(session=session, track_id=track_id)
@@ -1028,7 +1024,7 @@ class Session:
                 log.error("API Response: '%s'", resp_str)
             raise InvalidUPC
 
-    def video(self, video_id: Optional[str] = None) -> media.Video:
+    def video(self, video_id: str | None = None) -> media.Video:
         """Function to create a Video object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Video(session=session, video_id=video_id)
         <.Video>` internally.
@@ -1044,7 +1040,7 @@ class Session:
             log.warning("Video '%s' is unavailable", video_id)
             raise
 
-    def artist(self, artist_id: Optional[str] = None) -> artist.Artist:
+    def artist(self, artist_id: str | None = None) -> artist.Artist:
         """Function to create a Artist object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Artist(session=session,
         artist_id=artist_id) <.Artist>` internally.
@@ -1060,7 +1056,7 @@ class Session:
             log.warning("Artist '%s' is unavailable", artist_id)
             raise
 
-    def album(self, album_id: Optional[str] = None) -> album.Album:
+    def album(self, album_id: str | None = None) -> album.Album:
         """Function to create a Album object with access to the session instance in a
         smoother way. Calls :class:`tidalapi.Album(session=session, album_id=album_id)
         <.Album>` internally.
@@ -1076,7 +1072,7 @@ class Session:
             log.warning("Album '%s' is unavailable", album_id)
             raise
 
-    def mix(self, mix_id: Optional[str] = None) -> mix.Mix:
+    def mix(self, mix_id: str | None = None) -> mix.Mix:
         """Function to create a mix object with access to the session instance smoothly
         Calls :class:`tidalapi.Mix(session=session, mix_id=mix_id) <.Album>` internally.
 
@@ -1108,8 +1104,8 @@ class Session:
             raise
 
     def get_user(
-        self, user_id: Optional[int] = None
-    ) -> Union["FetchedUser", "LoggedInUser", "PlaylistCreator"]:
+        self, user_id: int | None = None
+    ) -> FetchedUser | LoggedInUser | PlaylistCreator:
         """Function to create a User object with access to the session instance in a
         smoother way. Calls :class:`user.User(session=session, user_id=user_id) <.User>`
         internally.

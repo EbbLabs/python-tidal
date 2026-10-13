@@ -21,16 +21,12 @@ import json
 import logging
 import threading
 import time
+from collections.abc import Callable, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    List,
     Literal,
-    Mapping,
-    MutableMapping,
     Optional,
-    Union,
     cast,
 )
 from urllib.parse import urljoin
@@ -48,7 +44,7 @@ from tidalapi.types import JsonObj
 
 log = logging.getLogger(__name__)
 
-Params = Mapping[str, Union[str, int, None]]
+Params = Mapping[str, str | int | None]
 
 Methods = Literal["GET", "POST", "PUT", "DELETE"]
 
@@ -65,7 +61,7 @@ ABUSE_BACKOFF = 30 * 60
 TOKEN_EXPIRY_MARGIN = datetime.timedelta(seconds=60)
 
 
-class Requests(object):
+class Requests:
     """A class for handling api requests to TIDAL."""
 
     user_agent: str
@@ -86,7 +82,7 @@ class Requests(object):
         self._backoff_until = 0.0
         self._backoff_reason = ""
 
-    def _refresh_access_token(self, stale_access_token: Optional[str]) -> bool:
+    def _refresh_access_token(self, stale_access_token: str | None) -> bool:
         """Refresh the access token, at most once for concurrent callers.
 
         Requests are often issued from several threads (e.g. the paginated workers). If
@@ -169,8 +165,8 @@ class Requests(object):
         self,
         method: Methods,
         url: str,
-        request_params: Mapping[str, Union[str, int, None]],
-        data: Optional[JsonObj],
+        request_params: Mapping[str, str | int | None],
+        data: JsonObj | None,
         headers: MutableMapping[str, str],
     ) -> requests.Response:
         """Send a request with the session's current access token."""
@@ -188,10 +184,10 @@ class Requests(object):
         self,
         method: Methods,
         path: str,
-        params: Optional[Params] = None,
-        data: Optional[JsonObj] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        base_url: Optional[str] = None,
+        params: Params | None = None,
+        data: JsonObj | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        base_url: str | None = None,
     ) -> requests.Response:
         self._raise_if_backing_off()
         request_params = {
@@ -258,10 +254,10 @@ class Requests(object):
         self,
         method: Methods,
         path: str,
-        params: Optional[Params] = None,
-        data: Optional[JsonObj] = None,
-        headers: Optional[MutableMapping[str, str]] = None,
-        base_url: Optional[str] = None,
+        params: Params | None = None,
+        data: JsonObj | None = None,
+        headers: MutableMapping[str, str] | None = None,
+        base_url: str | None = None,
     ) -> requests.Response:
         """Method for tidal requests.
 
@@ -280,7 +276,7 @@ class Requests(object):
         try:
             request.raise_for_status()
         except requests.HTTPError as e:
-            log.info("Request resulted in exception {}".format(e))
+            log.info(f"Request resulted in exception {e}")
             self.latest_err_response = request
             if err := http_error_to_tidal_error(e):
                 raise err from e
@@ -314,8 +310,8 @@ class Requests(object):
     def map_request(
         self,
         url: str,
-        params: Optional[Params] = None,
-        parse: Optional[Callable[..., Any]] = None,
+        params: Params | None = None,
+        parse: Callable[..., Any] | None = None,
     ) -> Any:
         """Returns the data about object(s) at the specified url, with the method
         specified in the parse argument.
@@ -339,7 +335,7 @@ class Requests(object):
     def map_json(
         cls,
         json_obj: JsonObj,
-        parse: Optional[Callable[..., Any]] = None,
+        parse: Callable[..., Any] | None = None,
         session: Optional["Session"] = None,
     ) -> Any:
         items = json_obj.get("items")
@@ -356,7 +352,7 @@ class Requests(object):
                 for item in items:
                     item["item"]["dateAdded"] = item["created"]
 
-            lists: List[Any] = []
+            lists: list[Any] = []
             for item in items:
                 if session is not None:
                     parse = cast(
