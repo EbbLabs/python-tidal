@@ -19,11 +19,10 @@
 import copy
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Mapping, NoReturn, Optional, Union, cast
 from warnings import warn
 
 import dateutil.parser
-from typing_extensions import NoReturn
 
 from tidalapi.exceptions import MetadataNotAvailable, ObjectNotFound, TooManyRequests
 from tidalapi.types import JsonObj

@@ -26,7 +26,6 @@ classifiers = [
 python = "^3.10"
 requests = "^2.32.3"
 python-dateutil = "^2.8.2"
-typing-extensions = "^4.12.2"
 isodate = "^0.7.2"
 mpegdash = "^0.4.1"
 
