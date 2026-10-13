@@ -29,7 +29,6 @@ python-dateutil = "^2.8.2"
 typing-extensions = "^4.12.2"
 isodate = "^0.7.2"
 mpegdash = "^0.4.1"
-pyaes = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.4.0"
@@ -61,3 +60,10 @@ profile = "black"
 [tool.docformatter]
 recursive = true
 black = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

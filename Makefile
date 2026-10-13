@@ -32,7 +32,7 @@ lint:
 	${POETRY} isort --check tidalapi tests
 	${POETRY} black --check tidalapi tests
 	${POETRY} docformatter --check tidalapi tests
-	# ${POETRY} ruff .
+	${POETRY} ruff check tidalapi tests
 
 
 test:
