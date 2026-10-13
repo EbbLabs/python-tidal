@@ -5,6 +5,7 @@ History
 
 v0.9.0
 ------
+* (BREAKING!) Drop support for python3.9 and older, python 3.10 or newer is now required - tehkillerbee_
 * Bugfix: Keep the rotated refresh token returned by TIDAL in `token_refresh`, previously users were logged out after a few days - tehkillerbee_
 * Bugfix: Serialize concurrent access token refreshes, so parallel requests no longer refresh with an already invalidated refresh token - tehkillerbee_
 * Bugfix: Refresh the access token shortly before it expires, instead of relying on the wording of the expired-token error - tehkillerbee_
