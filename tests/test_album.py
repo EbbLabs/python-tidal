@@ -140,10 +140,9 @@ def test_no_release_date(session):
 def test_default_image_not_used_on_albums_with_cover_art(session):
     album = session.album(108043414)
     assert album.cover is not None
-    default_album_url = "https://resources.tidal.com/images/%s/%ix%i.jpg" % (
-        tidalapi.album.DEFAULT_ALBUM_IMG.replace("-", "/"),
-        1280,
-        1280,
+    default_album_path = tidalapi.album.DEFAULT_ALBUM_IMG.replace("-", "/")
+    default_album_url = (
+        f"https://resources.tidal.com/images/{default_album_path}/1280x1280.jpg"
     )
     # Album should not use default album art
     assert album.image(1280) != default_album_url

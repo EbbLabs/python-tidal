@@ -56,6 +56,25 @@ def test_token_refresh_keeps_rotated_refresh_token():
     assert session.refresh_token == "rotated-refresh"
 
 
+def test_token_refresh_sets_timezone_aware_expiry_time():
+    session = make_session()
+    session.request_session = mock.Mock()
+    session.request_session.post.return_value = fake_response(
+        json_data={
+            "access_token": "new-access",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        }
+    )
+    before = datetime.datetime.now(datetime.timezone.utc)
+
+    assert session.token_refresh("old-refresh")
+
+    assert session.expiry_time.tzinfo is datetime.timezone.utc
+    expected = before + datetime.timedelta(seconds=3600)
+    assert expected <= session.expiry_time <= expected + datetime.timedelta(seconds=5)
+
+
 def test_token_refresh_keeps_refresh_token_when_not_rotated():
     session = make_session()
     session.request_session = mock.Mock()
@@ -138,7 +157,7 @@ def _refreshing_session(expiry_time):
 
 def test_request_refreshes_expired_token_before_sending():
     session = _refreshing_session(
-        datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
     )
 
     assert session.request.basic_request("GET", "tracks/1").ok
@@ -150,7 +169,7 @@ def test_request_refreshes_expired_token_before_sending():
 
 def test_request_refreshes_token_expiring_within_margin():
     session = _refreshing_session(
-        datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=10)
     )
 
     session.request.basic_request("GET", "tracks/1")
@@ -160,7 +179,7 @@ def test_request_refreshes_token_expiring_within_margin():
 
 def test_request_does_not_refresh_valid_token():
     session = _refreshing_session(
-        datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
     )
 
     session.request.basic_request("GET", "tracks/1")
@@ -187,7 +206,7 @@ def test_request_handles_timezone_aware_expiry_time():
 
 def test_failed_proactive_refresh_does_not_fail_the_request():
     session = _refreshing_session(
-        datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=10)
     )
     session.request_session.post.return_value = fake_response(
         400, {"error": "invalid_grant", "error_description": "dead"}

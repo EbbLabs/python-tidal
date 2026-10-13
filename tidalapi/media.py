@@ -25,7 +25,7 @@ import copy
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, cast
 
 import dateutil.parser
 
@@ -194,28 +194,26 @@ class Media:
     dj_ready: bool = False
     ad_supported_stream_ready: bool = False
 
-    stream_start_date: Optional[datetime] = None
-    tidal_release_date: Optional[datetime] = None  # aka. streamStartDate
-    date_added: Optional[datetime] = None
-    user_date_added: Optional[datetime] = None  # aka. dateAdded
+    stream_start_date: datetime | None = None
+    tidal_release_date: datetime | None = None  # aka. streamStartDate
+    date_added: datetime | None = None
+    user_date_added: datetime | None = None  # aka. dateAdded
     track_num: int = 1  # trackNumber
     volume_num: int = 1  # volumeNumber
 
-    artist: Optional["tidalapi.artist.Artist"] = None
+    artist: tidalapi.artist.Artist | None = None
     #: For the artist credit page
     artist_roles = None
-    artists: Optional[List["tidalapi.artist.Artist"]] = None
-    album: Optional["tidalapi.album.Album"] = None
-    type: Optional[str] = None
+    artists: list[tidalapi.artist.Artist] | None = None
+    album: tidalapi.album.Album | None = None
+    type: str | None = None
 
     # Direct URL to media https://listen.tidal.com/track/<id> or https://listen.tidal.com/browse/album/<album_id>/track/<track_id>
     listen_url: str = ""
     # Direct URL to media https://tidal.com/browse/track/<id>
     share_url: str = ""
 
-    def __init__(
-        self, session: "tidalapi.session.Session", media_id: Optional[str] = None
-    ):
+    def __init__(self, session: tidalapi.session.Session, media_id: str | None = None):
         self.session = session
         self.requests = self.session.request
         self.album = session.album()
@@ -229,7 +227,7 @@ class Media:
             "You are not supposed to use the media class directly."
         )
 
-    def parse(self, json_obj: JsonObj, album: Optional[Album] = None) -> None:
+    def parse(self, json_obj: JsonObj, album: Album | None = None) -> None:
         """Assigns all :param json_obj:
 
         :param json_obj: The JSON object to parse
@@ -288,8 +286,8 @@ class Media:
         self.artist_roles = json_obj.get("artistRoles")
 
     def parse_media(
-        self, json_obj: JsonObj, album: Optional[Album] = None
-    ) -> Union["Track", "Video"]:
+        self, json_obj: JsonObj, album: Album | None = None
+    ) -> Track | Video:
         """Selects the media type when checking lists that can contain both.
 
         :param json_obj: The json containing the media
@@ -314,19 +312,19 @@ class Track(Media):
     upload: bool = False
 
     # Audio quality and metadata
-    audio_quality: Optional[str] = None
-    audio_modes: Optional[List[str]] = None
-    media_metadata_tags: Optional[List[str]] = None
+    audio_quality: str | None = None
+    audio_modes: list[str] | None = None
+    media_metadata_tags: list[str] | None = None
 
     # Identification
-    index: Optional[int] = None
-    item_uuid: Optional[str] = None
-    isrc: Optional[str] = None
+    index: int | None = None
+    item_uuid: str | None = None
+    isrc: str | None = None
 
     # Track info
-    date_added: Optional[datetime] = None
-    description: Optional[str] = None
-    version: Optional[str] = None
+    date_added: datetime | None = None
+    description: str | None = None
+    version: str | None = None
     copyright: str = ""
     url: str = ""
     bpm: int = 0
@@ -335,12 +333,12 @@ class Track(Media):
     peak: float = 0.0
     replay_gain: float = 0.0
     # Related mixes
-    mixes: Optional[Dict] = None
+    mixes: dict | None = None
 
     # Derived fields: Full name from title, name and version
     full_name: str = ""
 
-    def parse_track(self, json_obj: JsonObj, album: Optional[Album] = None) -> Track:
+    def parse_track(self, json_obj: JsonObj, album: Album | None = None) -> Track:
         Media.parse(self, json_obj, album)
         self.pay_to_stream = json_obj.get("payToStream", False)
         self.premium_streaming_only = json_obj.get("premiumStreamingOnly", False)
@@ -389,7 +387,7 @@ class Track(Media):
 
         return copy.copy(self)
 
-    def _get(self, media_id: str) -> "Track":
+    def _get(self, media_id: str) -> Track:
         """Returns information about a track, and also replaces the track used to call
         this function.
 
@@ -397,9 +395,9 @@ class Track(Media):
         :return: A :class:`Track` object containing all the information about the track
         """
         try:
-            request = self.requests.request("GET", "tracks/%s" % media_id)
+            request = self.requests.request("GET", f"tracks/{media_id}")
         except ObjectNotFound as e:
-            e.args = ("Track with id %s not found" % media_id,)
+            e.args = (f"Track with id {media_id} not found",)
             raise e
         except TooManyRequests as e:
             e.args = ("Track unavailable",)
@@ -419,9 +417,7 @@ class Track(Media):
         """
         if self.session.is_pkce:
             raise URLNotAvailable(
-                "Track URL not available with quality:'{}'".format(
-                    self.session.config.quality
-                )
+                f"Track URL not available with quality:'{self.session.config.quality}'"
             )
         params = {
             "urlusagemode": "STREAM",
@@ -430,7 +426,7 @@ class Track(Media):
         }
         try:
             request = self.requests.request(
-                "GET", "tracks/%s/urlpostpaywall" % self.id, params
+                "GET", f"tracks/{self.id}/urlpostpaywall", params
             )
         except ObjectNotFound:
             raise URLNotAvailable("URL not available for this track")
@@ -441,14 +437,14 @@ class Track(Media):
             json_obj = request.json()
             return cast(str, json_obj["urls"][0])
 
-    def lyrics(self) -> "Lyrics":
+    def lyrics(self) -> Lyrics:
         """Retrieves the lyrics for a song.
 
         :return: A :class:`Lyrics` object containing the lyrics
         :raises: A :class:`exceptions.MetadataNotAvailable` if there aren't any lyrics
         """
         try:
-            request = self.requests.request("GET", "tracks/%s/lyrics" % self.id)
+            request = self.requests.request("GET", f"tracks/{self.id}/lyrics")
         except ObjectNotFound:
             raise MetadataNotAvailable("No lyrics exists for this track")
         except TooManyRequests as e:
@@ -460,7 +456,7 @@ class Track(Media):
             assert not isinstance(lyrics, list)
             return cast("Lyrics", lyrics)
 
-    def get_track_radio(self, limit: int = 100) -> List["Track"]:
+    def get_track_radio(self, limit: int = 100) -> list[Track]:
         """Queries TIDAL for the track radio mix as a list of tracks similar to this
         track.
 
@@ -472,7 +468,7 @@ class Track(Media):
 
         try:
             request = self.requests.request(
-                "GET", "tracks/%s/radio" % self.id, params=params
+                "GET", f"tracks/{self.id}/radio", params=params
             )
         except ObjectNotFound:
             raise MetadataNotAvailable("Track radio not available for this track")
@@ -483,7 +479,7 @@ class Track(Media):
             json_obj = request.json()
             tracks = self.requests.map_json(json_obj, parse=self.session.parse_track)
             assert isinstance(tracks, list)
-            return cast(List["Track"], tracks)
+            return cast(list["Track"], tracks)
 
     def get_radio_mix(self) -> mix.Mix:
         """Queries TIDAL for the track radio mix of tracks that are similar to this
@@ -494,7 +490,7 @@ class Track(Media):
             available
         """
         try:
-            request = self.requests.request("GET", "tracks/%s/mix" % self.id)
+            request = self.requests.request("GET", f"tracks/{self.id}/mix")
         except ObjectNotFound:
             raise MetadataNotAvailable("Track radio not available for this track")
         except TooManyRequests as e:
@@ -504,7 +500,7 @@ class Track(Media):
             json_obj = request.json()
             return self.session.mix(json_obj.get("id"))
 
-    def get_stream(self) -> "Stream":
+    def get_stream(self) -> Stream:
         """Retrieves the track streaming object, allowing for audio transmission.
 
         :return: A :class:`Stream` object which holds audio file properties and
@@ -520,7 +516,7 @@ class Track(Media):
 
         try:
             request = self.requests.request(
-                "GET", "tracks/%s/playbackinfopostpaywall" % self.id, params
+                "GET", f"tracks/{self.id}/playbackinfopostpaywall", params
             )
         except ObjectNotFound:
             raise StreamNotAvailable("Stream not available for this track")
@@ -575,7 +571,7 @@ class Stream:
     bit_depth: int = 16
     sample_rate: int = 44100
 
-    def parse(self, json_obj: JsonObj) -> "Stream":
+    def parse(self, json_obj: JsonObj) -> Stream:
         self.track_id = json_obj.get("trackId")
         self.audio_mode = json_obj.get("audioMode")
         self.audio_quality = json_obj.get("audioQuality")
@@ -598,7 +594,7 @@ class Stream:
     def get_audio_resolution(self):
         return self.bit_depth, self.sample_rate
 
-    def get_stream_manifest(self) -> "StreamManifest":
+    def get_stream_manifest(self) -> StreamManifest:
         return StreamManifest(self)
 
     def get_manifest_data(self) -> str:
@@ -690,7 +686,7 @@ class StreamManifest:
         return self.dash_info.audio_sampling_rate
 
     @staticmethod
-    def get_mimetype(stream_codec, stream_url: Optional[str] = None) -> str:
+    def get_mimetype(stream_codec, stream_url: str | None = None) -> str:
         if stream_codec:
             return MimeType.from_audio_codec(stream_codec)
         if not stream_url:
@@ -702,7 +698,7 @@ class StreamManifest:
                 return MimeType.audio_m4a
 
     @staticmethod
-    def get_file_extension(stream_url: str, stream_codec: Optional[str] = None) -> str:
+    def get_file_extension(stream_url: str, stream_codec: str | None = None) -> str:
         if AudioExtensions.FLAC in stream_url:
             # If the file extension within the URL is '*.flac', this is simply a FLAC file.
             result: str = AudioExtensions.FLAC
@@ -753,7 +749,7 @@ class DashInfo:
     urls: [str] = [""]
 
     @staticmethod
-    def from_stream(stream) -> "DashInfo":
+    def from_stream(stream) -> DashInfo:
         try:
             if stream.is_mpd and not stream.is_encrypted:
                 return DashInfo(stream.get_manifest_data())
@@ -761,7 +757,7 @@ class DashInfo:
             raise ManifestDecodeError from e
 
     @staticmethod
-    def from_mpd(mpd_manifest) -> "DashInfo":
+    def from_mpd(mpd_manifest) -> DashInfo:
         try:
             return DashInfo(mpd_manifest)
         except Exception as e:
@@ -856,7 +852,7 @@ class DashInfo:
 
     def get_hls(self) -> str:
         hls = "#EXTM3U\n"
-        hls += "#EXT-X-TARGETDURATION:%s\n" % int(self.duration.seconds)
+        hls += f"#EXT-X-TARGETDURATION:{int(self.duration.seconds)}\n"
         hls += "#EXT-X-VERSION:3\n"
         items = self.urls
         chunk_duration = "#EXTINF:%0.3f,\n" % (
@@ -883,7 +879,7 @@ class Lyrics:
     subtitles: str = ""
     right_to_left: bool = False
 
-    def parse(self, json_obj: JsonObj) -> "Lyrics":
+    def parse(self, json_obj: JsonObj) -> Lyrics:
         self.track_id = json_obj["trackId"]
         self.provider = json_obj["lyricsProvider"]
         self.provider_track_id = json_obj["providerCommontrackId"]
@@ -898,17 +894,17 @@ class Lyrics:
 class Video(Media):
     """An object containing information about a video."""
 
-    release_date: Optional[datetime] = None
-    video_quality: Optional[str] = None
-    image_id: Optional[str] = None
-    image_path: Optional[str] = None
-    cover: Optional[str] = None  # aka. image_id
+    release_date: datetime | None = None
+    video_quality: str | None = None
+    image_id: str | None = None
+    image_path: str | None = None
+    cover: str | None = None  # aka. image_id
 
     vibrant_color: str = "#000000"
     ads_pre_paywall_only: bool = False
-    ads_url: Optional[str] = ""
+    ads_url: str | None = ""
 
-    def parse_video(self, json_obj: JsonObj, album: Optional[Album] = None) -> Video:
+    def parse_video(self, json_obj: JsonObj, album: Album | None = None) -> Video:
         Media.parse(self, json_obj, album)
         release_date = json_obj.get("releaseDate")
         self.release_date = (
@@ -942,9 +938,9 @@ class Video(Media):
             unavailable
         """
         try:
-            request = self.requests.request("GET", "videos/%s" % self.id)
+            request = self.requests.request("GET", f"videos/{self.id}")
         except ObjectNotFound as e:
-            e.args = ("Video with id %s not found" % media_id,)
+            e.args = (f"Video with id {media_id} not found",)
             raise e
         except TooManyRequests as e:
             e.args = ("Video unavailable",)
@@ -970,7 +966,7 @@ class Video(Media):
 
         try:
             request = self.requests.request(
-                "GET", "videos/%s/urlpostpaywall" % self.id, params
+                "GET", f"videos/{self.id}/urlpostpaywall", params
             )
         except ObjectNotFound:
             raise URLNotAvailable("URL not available for this video")
@@ -983,7 +979,7 @@ class Video(Media):
 
     def image(self, width: int = 1080, height: int = 720) -> str:
         if (width, height) not in [(160, 107), (480, 320), (750, 500), (1080, 720)]:
-            raise ValueError("Invalid resolution {} x {}".format(width, height))
+            raise ValueError(f"Invalid resolution {width} x {height}")
         if not self.cover:
             raise AttributeError("No cover image")
         return self.session.config.image_url % (

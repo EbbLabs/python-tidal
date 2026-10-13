@@ -21,7 +21,7 @@ import copy
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING
 
 import dateutil.parser
 
@@ -68,20 +68,20 @@ class Mix:
     title: str = ""
     sub_title: str = ""
     sharing_images = None
-    mix_type: Optional[MixType] = None
+    mix_type: MixType | None = None
     content_behaviour: str = ""
     short_subtitle: str = ""
-    images: Optional[ImageResponse] = None
+    images: ImageResponse | None = None
     _retrieved = False
-    _items: Optional[List[Union["Video", "Track"]]] = None
+    _items: list[Video | Track] | None = None
 
-    def __init__(self, session: Session, mix_id: Optional[str]):
+    def __init__(self, session: Session, mix_id: str | None):
         self.session = session
         self.request = session.request
         if mix_id is not None:
             self.get(mix_id)
 
-    def get(self, mix_id: Optional[str] = None) -> "Mix":
+    def get(self, mix_id: str | None = None) -> Mix:
         """Returns information about a mix, and also replaces the mix object used to
         call this function.
 
@@ -96,7 +96,7 @@ class Mix:
         try:
             request = self.request.request("GET", "pages/mix", params=params)
         except ObjectNotFound as e:
-            e.args = ("Mix with id %s not found" % mix_id,)
+            e.args = (f"Mix with id {mix_id} not found",)
             raise e
         except TooManyRequests as e:
             e.args = ("Mix unavailable",)
@@ -113,7 +113,7 @@ class Mix:
                 self._items = result.categories[1].items
                 return self
 
-    def parse(self, json_obj: JsonObj) -> "Mix":
+    def parse(self, json_obj: JsonObj) -> Mix:
         """Parse a mix into a :class:`Mix`, replaces the calling object.
 
         :param json_obj: The json of a mix to be parsed
@@ -135,7 +135,7 @@ class Mix:
 
         return copy.copy(self)
 
-    def items(self) -> List[Union["Video", "Track"]]:
+    def items(self) -> list[Video | Track]:
         """Returns all the items in the mix, retrieves them with :class:`get` as well if
         not already done.
 
@@ -178,25 +178,25 @@ class TextInfo:
 class MixV2:
     """A mix from TIDALs v2 api endpoint."""
 
-    mix_type: Optional[MixType] = None
-    country_code: Optional[str] = None
-    date_added: Optional[datetime] = None
-    id: Optional[str] = None
-    artifact_id_type: Optional[str] = None
-    content_behavior: Optional[str] = None
-    images: Optional[ImageResponse] = None
-    detail_images: Optional[ImageResponse] = None
+    mix_type: MixType | None = None
+    country_code: str | None = None
+    date_added: datetime | None = None
+    id: str | None = None
+    artifact_id_type: str | None = None
+    content_behavior: str | None = None
+    images: ImageResponse | None = None
+    detail_images: ImageResponse | None = None
     master = False
     is_stable_id = False
-    title: Optional[str] = None
-    sub_title: Optional[str] = None
-    short_subtitle: Optional[str] = None
-    title_text_info: Optional[TextInfo] = None
-    sub_title_text_info: Optional[TextInfo] = None
-    short_subtitle_text_info: Optional[TextInfo] = None
-    updated: Optional[datetime] = None
+    title: str | None = None
+    sub_title: str | None = None
+    short_subtitle: str | None = None
+    title_text_info: TextInfo | None = None
+    sub_title_text_info: TextInfo | None = None
+    short_subtitle_text_info: TextInfo | None = None
+    updated: datetime | None = None
     _retrieved = False
-    _items: Optional[List[Union["Video", "Track"]]] = None
+    _items: list[Video | Track] | None = None
 
     def __init__(self, session: Session, mix_id: str):
         self.session = session
@@ -204,7 +204,7 @@ class MixV2:
         if mix_id is not None:
             self.get(mix_id)
 
-    def get(self, mix_id: Optional[str] = None) -> "MixV2":
+    def get(self, mix_id: str | None = None) -> MixV2:
         """Returns information about a mix, and also replaces the mix object used to
         call this function.
 
@@ -218,7 +218,7 @@ class MixV2:
         try:
             request = self.request.request("GET", "pages/mix", params=params)
         except ObjectNotFound as e:
-            e.args = ("Mix with id %s not found" % mix_id,)
+            e.args = (f"Mix with id {mix_id} not found",)
             raise e
         except TooManyRequests as e:
             e.args = ("Mix unavailable",)
@@ -236,7 +236,7 @@ class MixV2:
                 self._items = result.categories[1].items
                 return self
 
-    def parse(self, json_obj: JsonObj) -> "MixV2":
+    def parse(self, json_obj: JsonObj) -> MixV2:
         """Parse a mix into a :class:`MixV2`, replaces the calling object.
 
         :param json_obj: The json of a mix to be parsed

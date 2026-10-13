@@ -1,18 +1,17 @@
-[tool.poetry]
+[project]
 name = "tidalapi"
 version = "0.9.0"
 description = "Unofficial API for TIDAL music streaming service."
-authors = ["Thomas Amland <thomas.amland@googlemail.com>"]
-maintainers = ["tehkillerbee <tehkillerbee@users.noreply.github.com>"]
+authors = [{ name = "Thomas Amland", email = "thomas.amland@googlemail.com" }]
+maintainers = [
+    { name = "tehkillerbee", email = "tehkillerbee@users.noreply.github.com" },
+]
 license = "LGPL-3.0-or-later"
-readme = ["README.rst", "HISTORY.rst"]
-homepage = "https://tidalapi.netlify.app"
-repository = "https://github.com/EbbLabs/python-tidal"
-documentation = "https://tidalapi.netlify.app"
+license-files = ["LICENSE"]
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -21,13 +20,21 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
+dependencies = [
+    "requests>=2.32.3,<3.0.0",
+    "python-dateutil>=2.8.2,<3.0.0",
+    "isodate>=0.7.2,<0.8.0",
+    "mpegdash>=0.4.1,<0.5.0",
+]
+dynamic = ["readme"]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-requests = "^2.32.3"
-python-dateutil = "^2.8.2"
-isodate = "^0.7.2"
-mpegdash = "^0.4.1"
+[project.urls]
+Homepage = "https://tidalapi.netlify.app"
+Repository = "https://github.com/EbbLabs/python-tidal"
+Documentation = "https://tidalapi.netlify.app"
+
+[tool.poetry]
+readme = ["README.rst", "HISTORY.rst"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.4.0"
@@ -45,7 +52,7 @@ docformatter = { extras = ["tomli"], version = "^1.7.3" }
 pytest-mock = "^3.11.1"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
@@ -60,8 +67,7 @@ recursive = true
 black = true
 
 [tool.ruff]
-target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "UP"]

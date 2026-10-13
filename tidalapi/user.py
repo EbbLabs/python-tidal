@@ -23,7 +23,7 @@ favorites.
 from __future__ import annotations
 
 from copy import copy
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 from urllib.parse import urljoin
 
 from tidalapi.exceptions import ObjectNotFound
@@ -69,26 +69,24 @@ class User:
     and id.
     """
 
-    id: Optional[int] = -1
+    id: int | None = -1
 
-    def __init__(self, session: "Session", user_id: Optional[int]):
+    def __init__(self, session: Session, user_id: int | None):
         self.id = user_id
         self.session = session
         self.request = session.request
         self.playlist = session.playlist()
         self.folder = session.folder()
 
-    def factory(self) -> Union["LoggedInUser", "FetchedUser", "PlaylistCreator"]:
+    def factory(self) -> LoggedInUser | FetchedUser | PlaylistCreator:
         return cast(
             Union["LoggedInUser", "FetchedUser", "PlaylistCreator"],
-            self.request.map_request("users/%s" % self.id, parse=self.parse),
+            self.request.map_request(f"users/{self.id}", parse=self.parse),
         )
 
-    def parse(
-        self, json_obj: JsonObj
-    ) -> Union["LoggedInUser", "FetchedUser", "PlaylistCreator"]:
+    def parse(self, json_obj: JsonObj) -> LoggedInUser | FetchedUser | PlaylistCreator:
         if "username" in json_obj:
-            user: Union[LoggedInUser, FetchedUser, PlaylistCreator] = LoggedInUser(
+            user: LoggedInUser | FetchedUser | PlaylistCreator = LoggedInUser(
                 self.session, json_obj["id"]
             )
 
@@ -106,11 +104,11 @@ class User:
 
 
 class FetchedUser(User):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    picture_id: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    picture_id: str | None = None
 
-    def parse(self, json_obj: JsonObj) -> "FetchedUser":
+    def parse(self, json_obj: JsonObj) -> FetchedUser:
         self.id = json_obj["id"]
         self.first_name = json_obj["firstName"]
         self.last_name = json_obj["lastName"]
@@ -120,7 +118,7 @@ class FetchedUser(User):
 
     def image(self, dimensions: int) -> str:
         if dimensions not in [100, 210, 600]:
-            raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
+            raise ValueError(f"Invalid resolution {dimensions} x {dimensions}")
 
         if self.picture_id is None:
             raise AttributeError("No picture available")
@@ -133,39 +131,39 @@ class FetchedUser(User):
 
 
 class LoggedInUser(FetchedUser):
-    username: Optional[str] = None
-    email: Optional[str] = None
-    profile_metadata: Optional[JsonObj] = None
+    username: str | None = None
+    email: str | None = None
+    profile_metadata: JsonObj | None = None
 
-    def __init__(self, session: "Session", user_id: Optional[int]):
-        super(LoggedInUser, self).__init__(session, user_id)
+    def __init__(self, session: Session, user_id: int | None):
+        super().__init__(session, user_id)
         assert self.id is not None, "User is not logged in"
         self.favorites = Favorites(session, self.id)
 
-    def parse(self, json_obj: JsonObj) -> "LoggedInUser":
-        super(LoggedInUser, self).parse(json_obj)
+    def parse(self, json_obj: JsonObj) -> LoggedInUser:
+        super().parse(json_obj)
         self.username = json_obj["username"]
         self.email = json_obj["email"]
         self.profile_metadata = json_obj
 
         return copy(self)
 
-    def playlists(self) -> List[Union["Playlist", "UserPlaylist"]]:
+    def playlists(self) -> list[Playlist | UserPlaylist]:
         """Get the (personal) playlists created by the user.
 
         :return: Returns a list of :class:`~tidalapi.playlist.Playlist` objects
             containing the playlists.
         """
         return cast(
-            List[Union["Playlist", "UserPlaylist"]],
+            list[Union["Playlist", "UserPlaylist"]],
             self.request.map_request(
-                "users/%s/playlists" % self.id, parse=self.playlist.parse_factory
+                f"users/{self.id}/playlists", parse=self.playlist.parse_factory
             ),
         )
 
     def public_playlists(
         self, offset: int = 0, limit: int = 50
-    ) -> List[Union["Playlist", "UserPlaylist"]]:
+    ) -> list[Playlist | UserPlaylist]:
         """Get the (public) playlists created by the user.
 
         :param limit: The number of items you want returned.
@@ -173,7 +171,7 @@ class LoggedInUser(FetchedUser):
         :return: List of public playlists.
         """
         params = {"limit": limit, "offset": offset}
-        endpoint = "user-playlists/%s/public" % self.id
+        endpoint = f"user-playlists/{self.id}/public"
         json_obj = self.request.request(
             "GET", endpoint, base_url=self.session.config.api_v2_location, params=params
         ).json()
@@ -185,13 +183,13 @@ class LoggedInUser(FetchedUser):
                 playlists["items"].append(item["playlist"])
 
         return cast(
-            List[Union["Playlist", "UserPlaylist"]],
+            list[Union["Playlist", "UserPlaylist"]],
             self.request.map_json(playlists, parse=self.playlist.parse_factory),
         )
 
     def playlist_and_favorite_playlists(
         self, offset: int = 0, limit: int = 50
-    ) -> List[Union["Playlist", "UserPlaylist"]]:
+    ) -> list[Playlist | UserPlaylist]:
         """Get the playlists created by the user, and the playlists favorited by the
         user. This function is limited to 50 by TIDAL, requiring pagination.
 
@@ -199,7 +197,7 @@ class LoggedInUser(FetchedUser):
             containing the playlists.
         """
         params = {"limit": limit, "offset": offset}
-        endpoint = "users/%s/playlistsAndFavoritePlaylists" % self.id
+        endpoint = f"users/{self.id}/playlistsAndFavoritePlaylists"
         json_obj = self.request.request("GET", endpoint, params=params).json()
 
         # This endpoint sorts them into favorited and created playlists, but we already do that when parsing them.
@@ -208,13 +206,13 @@ class LoggedInUser(FetchedUser):
             json_obj["items"][index] = item["playlist"]
 
         return cast(
-            List[Union["Playlist", "UserPlaylist"]],
+            list[Union["Playlist", "UserPlaylist"]],
             self.request.map_json(json_obj, parse=self.playlist.parse_factory),
         )
 
     def create_playlist(
         self, title: str, description: str, parent_id: str = "root"
-    ) -> "UserPlaylist":
+    ) -> UserPlaylist:
         """Create a playlist in the specified parent folder.
 
         :param title: Playlist title
@@ -239,7 +237,7 @@ class LoggedInUser(FetchedUser):
         else:
             raise ObjectNotFound("Playlist not found after creation")
 
-    def create_folder(self, title: str, parent_id: str = "root") -> "Folder":
+    def create_folder(self, title: str, parent_id: str = "root") -> Folder:
         """Create folder in the specified parent folder.
 
         :param title: Folder title
@@ -263,9 +261,9 @@ class LoggedInUser(FetchedUser):
 
 
 class PlaylistCreator(User):
-    name: Optional[str] = None
+    name: str | None = None
 
-    def parse(self, json_obj: JsonObj) -> "PlaylistCreator":
+    def parse(self, json_obj: JsonObj) -> PlaylistCreator:
         if self.id == 0 or self.session.user is None:
             self.name = "TIDAL"
 
@@ -284,7 +282,7 @@ class PlaylistCreator(User):
 class Favorites:
     """An object containing a users favourites."""
 
-    def __init__(self, session: "Session", user_id: int):
+    def __init__(self, session: Session, user_id: int):
         self.session = session
         self.requests = session.request
         self.base_url = f"users/{user_id}/favorites"
@@ -557,9 +555,9 @@ class Favorites:
 
     def artists_paginated(
         self,
-        order: Optional[ArtistOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Artist"]:
+        order: ArtistOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Artist]:
         """Get the users favorite artists, using pagination.
 
         :param order: Optional; A :class:`ArtistOrder` describing the ordering type when
@@ -578,9 +576,9 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[ArtistOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Artist"]:
+        order: ArtistOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Artist]:
         """Get the users favorite artists.
 
         :param limit: The number of artist you want returned.
@@ -599,7 +597,7 @@ class Favorites:
             params["orderDirection"] = order_direction.value
 
         return cast(
-            List["Artist"],
+            list["Artist"],
             self.requests.map_request(
                 f"{self.base_url}/artists",
                 params=params,
@@ -624,9 +622,9 @@ class Favorites:
 
     def albums_paginated(
         self,
-        order: Optional[AlbumOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Album"]:
+        order: AlbumOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Album]:
         """Get the users favorite albums, using pagination.
 
         :param order: Optional; A :class:`AlbumOrder` describing the ordering type when
@@ -645,9 +643,9 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[AlbumOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Album"]:
+        order: AlbumOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Album]:
         """Get the users favorite albums.
 
         :param limit: The number of albums you want returned.
@@ -666,7 +664,7 @@ class Favorites:
             params["orderDirection"] = order_direction.value
 
         return cast(
-            List["Album"],
+            list["Album"],
             self.requests.map_request(
                 f"{self.base_url}/albums", params=params, parse=self.session.parse_album
             ),
@@ -689,9 +687,9 @@ class Favorites:
 
     def playlists_paginated(
         self,
-        order: Optional[PlaylistOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Playlist"]:
+        order: PlaylistOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Playlist]:
         """Get the users favorite playlists, using cursor-based pagination.
 
         The v2 my-collection/playlists/folders endpoint uses cursor-based pagination.
@@ -705,8 +703,8 @@ class Favorites:
         :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing
             the favorite playlists.
         """
-        playlists: List["Playlist"] = []
-        cursor: Optional[str] = None
+        playlists: list[Playlist] = []
+        cursor: str | None = None
 
         while True:
             items = self.playlists(
@@ -725,10 +723,10 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[PlaylistOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-        cursor: Optional[str] = None,
-    ) -> List["Playlist"]:
+        order: PlaylistOrder | None = None,
+        order_direction: OrderDirection | None = None,
+        cursor: str | None = None,
+    ) -> list[Playlist]:
         """Get the users favorite playlists (v2 endpoint), relative to the root folder.
         This function is limited to 50 by TIDAL, requiring pagination.
 
@@ -768,17 +766,17 @@ class Favorites:
             json_obj, parse=self.session.parse_playlist
         )
         self._last_playlists_cursor = json_obj.get("cursor")
-        return cast(List["Playlist"], items)
+        return cast(list["Playlist"], items)
 
     def playlist_folders(
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[PlaylistOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
+        order: PlaylistOrder | None = None,
+        order_direction: OrderDirection | None = None,
         parent_folder_id: str = "root",
-        cursor: Optional[str] = None,
-    ) -> List["Folder"]:
+        cursor: str | None = None,
+    ) -> list[Folder]:
         """Get a list of folders created by the user.
 
         :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
@@ -814,7 +812,7 @@ class Favorites:
         json_obj = self.session.request.request("GET", url, params).json()
         items = self.session.request.map_json(json_obj, parse=self.session.parse_folder)
         self._last_folders_cursor = json_obj.get("cursor")
-        return cast(List["Folder"], items)
+        return cast(list["Folder"], items)
 
     def get_playlists_count(self) -> int:
         """Get the total number of playlists in the user's root collection.
@@ -838,9 +836,9 @@ class Favorites:
 
     def tracks_paginated(
         self,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Playlist"]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Playlist]:
         """Get the users favorite tracks, using pagination.
 
         :param order: Optional; A :class:`ItemOrder` describing the ordering type when
@@ -859,9 +857,9 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Track"]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Track]:
         """Get the users favorite tracks.
 
         :param limit: The number of tracks you want returned.
@@ -880,7 +878,7 @@ class Favorites:
             params["orderDirection"] = order_direction.value
 
         return cast(
-            List["Track"],
+            list["Track"],
             self.requests.map_request(
                 f"{self.base_url}/tracks", params=params, parse=self.session.parse_track
             ),
@@ -904,9 +902,9 @@ class Favorites:
 
     def videos_paginated(
         self,
-        order: Optional[ItemOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Video"]:
+        order: ItemOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Video]:
         """Get the users favorite videos, using pagination.
 
         :param order: Optional; A :class:`ItemOrder` describing the ordering type when
@@ -925,9 +923,9 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[VideoOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["Video"]:
+        order: VideoOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[Video]:
         """Get the users favorite videos.
 
         :param limit: The number of videos you want returned.
@@ -946,7 +944,7 @@ class Favorites:
             params["orderDirection"] = order_direction.value
 
         return cast(
-            List["Video"],
+            list["Video"],
             self.requests.map_request(
                 f"{self.base_url}/videos",
                 params=params,
@@ -973,9 +971,9 @@ class Favorites:
         self,
         limit: int = 50,
         offset: int = 0,
-        order: Optional[MixOrder] = None,
-        order_direction: Optional[OrderDirection] = None,
-    ) -> List["MixV2"]:
+        order: MixOrder | None = None,
+        order_direction: OrderDirection | None = None,
+    ) -> list[MixV2]:
         """Get the users favorite mixes & radio.
 
         :param limit: The number of mixes you want returned.
@@ -994,7 +992,7 @@ class Favorites:
             params["orderDirection"] = order_direction.value
 
         return cast(
-            List["MixV2"],
+            list["MixV2"],
             self.requests.map_request(
                 url=urljoin(
                     self.session.config.api_v2_location, f"{self.v2_base_url}/mixes"
