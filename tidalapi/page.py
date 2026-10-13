@@ -232,7 +232,8 @@ class PageCategory:
         """Get the full list of items on their own :class:`.Page` from a
         :class:`.PageCategory`
 
-        :return: A :class:`.Page` more of the items in the category, None if there aren't any
+        :return: A :class:`.Page` more of the items in the category, None if there
+            aren't any
         """
         api_path = self._more.api_path if self._more else None
         return (
@@ -325,7 +326,8 @@ class PageCategoryV2:
         """View all items in a Get the full list of items on their own :class:`.Page`
         from a :class:`.PageCategory`
 
-        :return: A :class:`.Page` more of the items in the category, None if there aren't any
+        :return: A :class:`.Page` more of the items in the category, None if there
+            aren't any
         """
         api_path = self._more.api_path if self._more else None
         return self.session.view_all(api_path) if api_path and self._more else None
@@ -523,7 +525,8 @@ class PageItem:
     ) -> Union["Artist", "Playlist", "Track", "UserPlaylist", "Video", "Album"]:
         """Retrieve the PageItem with the artifact_id matching the type.
 
-        :return: The fully parsed item, e.g. :class:`.Playlist`, :class:`.Video`, :class:`.Track`
+        :return: The fully parsed item, e.g. :class:`.Playlist`, :class:`.Video`,
+            :class:`.Track`
         """
         if self.type == "PLAYLIST":
             return self.session.playlist(self.artifact_id)

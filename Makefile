@@ -26,13 +26,13 @@ format:
 	${POETRY} isort tidalapi tests
 	${POETRY} black tidalapi tests
 	${POETRY} docformatter -i tidalapi tests
-	# ${POETRY} ruff . # Don't autofix as ruff can break things
+	# ${POETRY} ruff check --fix tidalapi tests # Don't autofix as ruff can break things
 
 lint:
 	${POETRY} isort --check tidalapi tests
 	${POETRY} black --check tidalapi tests
 	${POETRY} docformatter --check tidalapi tests
-	# ${POETRY} ruff .
+	${POETRY} ruff check tidalapi tests
 
 
 test:

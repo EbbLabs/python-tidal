@@ -242,7 +242,6 @@ class MixV2:
         :param json_obj: The json of a mix to be parsed
         :return: A copy of the parsed mix
         """
-
         self.id = json_obj["id"]
         if json_obj.get("mixType"):
             date_added = json_obj.get("dateAdded")

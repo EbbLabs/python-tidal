@@ -616,11 +616,11 @@ def test_get_favorite_albums_order(session):
     assert list_mismatch_count(ids_date_created_asc, ids_date_created_desc, True) < 3
 
     # Release date ascending vs. descending
-    ids_rel_date_asc = get_album_ids(
+    ids_rel_date_asc = get_album_ids(  # noqa: F841
         order=AlbumOrder.ReleaseDate,
         order_direction=OrderDirection.Ascending,
     )
-    ids_rel_date_desc = get_album_ids(
+    ids_rel_date_desc = get_album_ids(  # noqa: F841
         order=AlbumOrder.ReleaseDate,
         order_direction=OrderDirection.Descending,
     )
@@ -776,8 +776,9 @@ def list_mismatch_count(a, b, reverse=False):
 
 
 def add_remove(object_id, add, remove, objects):
-    """Add and remove an item from favorites. Skips the test if the item was already in
-    your favorites.
+    """Add and remove an item from favorites.
+
+    Skips the test if the item was already in your favorites.
 
     :param object_id: Identifier of the object
     :param add: Function to add object to favorites

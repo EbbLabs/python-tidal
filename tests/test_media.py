@@ -597,8 +597,8 @@ def validate_stream(stream, is_hi_res_lossless: bool = False):
     assert stream.audio_mode == AudioMode.stereo
     if not is_hi_res_lossless:
         assert stream.audio_quality == Quality.low_320k
-        assert stream.is_bts == True
-        assert stream.is_mpd == False
+        assert stream.is_bts is True
+        assert stream.is_mpd is False
         assert stream.bit_depth == 16
         assert stream.sample_rate == 44100
         assert stream.manifest_mime_type == ManifestMimeType.BTS
@@ -607,8 +607,8 @@ def validate_stream(stream, is_hi_res_lossless: bool = False):
         assert audio_resolution[1] == 44100
     else:
         assert stream.audio_quality == Quality.hi_res_lossless
-        assert stream.is_bts == False
-        assert stream.is_mpd == True
+        assert stream.is_bts is False
+        assert stream.is_mpd is True
         assert stream.bit_depth == 24
         assert stream.sample_rate == 192000  # HI_RES_LOSSLESS: 24bit/192kHz
         assert stream.manifest_mime_type == ManifestMimeType.MPD
@@ -622,26 +622,26 @@ def validate_stream(stream, is_hi_res_lossless: bool = False):
 
 def validate_stream_manifest(manifest, is_hi_res_lossless: bool = False):
     if not is_hi_res_lossless:
-        assert manifest.is_bts == True
-        assert manifest.is_mpd == False
+        assert manifest.is_bts is True
+        assert manifest.is_mpd is False
         assert manifest.codecs == Codec.MP4A
         assert manifest.dash_info is None
         assert manifest.encryption_key is None
         assert manifest.encryption_type == "NONE"
         assert manifest.file_extension == AudioExtensions.M4A
-        assert manifest.is_encrypted == False
+        assert manifest.is_encrypted is False
         assert manifest.manifest_mime_type == ManifestMimeType.BTS
         assert manifest.mime_type == MimeType.audio_mp4
         assert manifest.sample_rate == 44100
     else:
-        assert manifest.is_bts == False
-        assert manifest.is_mpd == True
+        assert manifest.is_bts is False
+        assert manifest.is_mpd is True
         assert manifest.codecs == Codec.FLAC
         assert manifest.dash_info is not None
         assert manifest.encryption_key is None
         assert manifest.encryption_type == "NONE"
         assert manifest.file_extension == AudioExtensions.M4A
-        assert manifest.is_encrypted == False
+        assert manifest.is_encrypted is False
         assert manifest.manifest_mime_type == ManifestMimeType.MPD
         assert manifest.mime_type == MimeType.audio_mp4
         assert manifest.sample_rate == 192000

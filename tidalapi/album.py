@@ -254,7 +254,6 @@ class Album:
 
         Valid resolutions: 80x80, 160x160, 320x320, 640x640, 1280x1280, 3000x3000 (origin)
         """
-
         if dimensions not in [80, 160, 320, 640, 1280, "origin"]:
             raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
 
@@ -316,8 +315,9 @@ class Album:
         return self.session.page.get("pages/album", params={"albumId": self.id})
 
     def similar(self) -> List["Album"]:
-        """Retrieve albums similar to the current one. MetadataNotAvailable is raised,
-        when no similar albums exist.
+        """Retrieve albums similar to the current one.
+
+        MetadataNotAvailable is raised, when no similar albums exist.
 
         :return: A :any:`list` of similar albums
         """

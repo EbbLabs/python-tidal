@@ -37,17 +37,17 @@ def test_image(session):
 
 def test_mix_unavailable(session):
     with pytest.raises(ObjectNotFound):
-        mix = session.mix("12345678")
+        session.mix("12345678")
 
 
 def test_mixv2_unavailable(session):
     with pytest.raises(ObjectNotFound):
-        mix = session.mixv2("12345678")
+        session.mixv2("12345678")
 
 
 def test_mix_available(session):
-    mix = session.mix("001cb879e927219fc3322cb03aed01")
+    session.mix("001cb879e927219fc3322cb03aed01")
 
 
 def test_mixv2_available(session):
-    mix = session.mixv2("001cb879e927219fc3322cb03aed01")
+    session.mixv2("001cb879e927219fc3322cb03aed01")

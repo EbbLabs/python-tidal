@@ -9,7 +9,7 @@ tidalapi
 
 Unofficial Python API for TIDAL music streaming service.
 
-Requires Python 3.9 or higher.
+Requires Python 3.10 or higher.
 
 Installation
 ------------

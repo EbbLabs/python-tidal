@@ -275,7 +275,6 @@ class Requests(object):
         :param base_url: The base url to use for the request
         :return: The json data at specified api endpoint.
         """
-
         request = self.basic_request(method, path, params, data, headers, base_url)
         log.debug("request: %s", request.request.url)
         try:

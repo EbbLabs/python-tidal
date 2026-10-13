@@ -45,11 +45,15 @@ from typing import (
 )
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-import pyaes
 import requests
 from requests.exceptions import HTTPError
 
-from tidalapi.exceptions import *
+from tidalapi.exceptions import (
+    AuthenticationError,
+    InvalidISRC,
+    InvalidUPC,
+    ObjectNotFound,
+)
 from tidalapi.types import JsonObj
 
 from . import album, artist, genre, media, mix, page, playlist, request, user
@@ -353,8 +357,10 @@ class Session:
         country_code: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> bool:
-        """Establishes TIDAL login details using a previous session id. May return true
-        if the session-id is invalid/expired, you should verify the login afterwards.
+        """Establishes TIDAL login details using a previous session id.
+
+        May return true if the session-id is invalid/expired, you should verify the
+        login afterwards.
 
         :param session_id: The UUID of the session you want to use.
         :param country_code: (Optional) Two-letter country code.
@@ -420,8 +426,10 @@ class Session:
         do_pkce: Optional[bool] = False,
         fn_print: Callable[[str], None] = print,
     ) -> bool:
-        """Logs in to the TIDAL api using an existing OAuth/PKCE session file. If no
-        session json file exists, a new one will be created after successful login.
+        """Logs in to the TIDAL api using an existing OAuth/PKCE session file.
+
+        If no session json file exists, a new one will be created after successful
+        login.
 
         :param session_file: The session json file
         :param do_pkce: Perform PKCE login. Default: Use OAuth logon
@@ -449,8 +457,10 @@ class Session:
             return False
 
     def login_pkce(self, fn_print: Callable[[str], None] = print) -> None:
-        """Login handler for PKCE based authentication. This is the only way how to get
-        access to HiRes (Up to 24-bit, 192 kHz) FLAC files.
+        """Login handler for PKCE based authentication.
+
+        This is the only way how to get access to HiRes (Up to 24-bit, 192 kHz) FLAC
+        files.
 
         This handler will ask you to follow a URL, process with the login in the browser
         and copy & paste the URL of the redirected browser page.
@@ -560,27 +570,28 @@ class Session:
         # Parse the JSON response.
         try:
             token: dict[str, Union[str, int]] = response.json()
-        except:
+        except requests.exceptions.JSONDecodeError:
             raise Exception("Wrong one-time authorization code", response)
 
         return token
 
     def login_oauth_simple(self, fn_print: Callable[[str], None] = print) -> None:
-        """Login to TIDAL using a remote link. You can select what function you want to
-        use to display the link.
+        """Login to TIDAL using a remote link.
+
+        You can select what function you want to use to display the link.
 
         :param fn_print: The function you want to display the link with
         :raises: TimeoutError: If the login takes too long
         """
-
         login, future = self.login_oauth()
         text = "Visit https://{0} to log in, the code will expire in {1} seconds"
         fn_print(text.format(login.verification_uri_complete, login.expires_in))
         future.result()
 
     def login_oauth(self) -> Tuple[LinkLogin, concurrent.futures.Future[Any]]:
-        """Login to TIDAL with a remote link for limited input devices. The function
-        will return everything you need to log in through a web browser, and will return
+        """Login to TIDAL with a remote link for limited input devices.
+
+        The function will return everything you need to log in through a web browser, and will return
         a future that will run until login.
 
         :return: A :class:`LinkLogin` object containing all the data needed to log in remotely, and
@@ -640,7 +651,8 @@ class Session:
         """Return information required to login into TIDAL using a device authorization
         link.
 
-        :return: Login information for device authorization retrieved from the TIDAL backend.
+        :return: Login information for device authorization retrieved from the TIDAL
+            backend.
         :rtype: :class:`LinkLogin`
         """
         url = "https://auth.tidal.com/v1/oauth2/device_authorization"
@@ -663,12 +675,13 @@ class Session:
         """Checks if device authorization was successful and processes the retrieved
         OAuth token from the Backend.
 
-        :param link_login: Link login information containing the necessary device authorization information.
+        :param link_login: Link login information containing the necessary device
+            authorization information.
         :type link_login: :class:`LinkLogin`
-        :param until_expiry: If `True` device authorization check is running until the link expires. If `False`check is running only once.
+        :param until_expiry: If `True` device authorization check is running until the
+            link expires. If `False`check is running only once.
         :type until_expiry: :class:`bool`
-
-        :return: `True` if login was successful.
+        :return:`True` if login was successful.
         :rtype: bool
         """
         result: JsonObj = self._check_link_login(link_login, until_expiry)
@@ -686,7 +699,7 @@ class Session:
         :type json: dict[str, str | int]
         :param is_pkce_token: Set true if current token is obtained using PKCE
         :type is_pkce_token: bool
-        :return: `True` if no error occurs.
+        :return:`True` if no error occurs.
         :rtype: bool
         """
         self.access_token = json["access_token"]
@@ -708,15 +721,19 @@ class Session:
     def _check_link_login(
         self, link_login: LinkLogin, until_expiry: bool = True
     ) -> TimeoutError | JsonObj:
-        """Checks if device authorization was successful and retrieves OAuth data. Can
-        check the backend for successful device authrization until the link expires
+        """Checks if device authorization was successful and retrieves OAuth data.
+
+        Can check the backend for successful device authrization until the link expires
         (with the given interval) or just once.
 
-        :param link_login: Link login information containing the necessary device authorization information.
+        :param link_login: Link login information containing the necessary device
+            authorization information.
         :type link_login: :class:`LinkLogin`
-        :param until_expiry: If `True` device authorization check is running until the link expires. If `False`check is running only once.
+        :param until_expiry: If `True` device authorization check is running until the
+            link expires. If `False`check is running only once.
         :type until_expiry: :class:`bool`
-        :return: Raise :class:`TimeoutError` if the link has expired otherwise returns retrieved OAuth information.
+        :return: Raise :class:`TimeoutError` if the link has expired otherwise returns
+            retrieved OAuth information.
         :rtype: :class:`TimeoutError` | :class:`JsonObj`
         """
         expiry: float = link_login.expires_in if until_expiry else 1
@@ -820,11 +837,14 @@ class Session:
 
         :param query: The string you want to search for
         :param models: A list of tidalapi models you want to include in the search.
-            Valid models are :class:`.Artist`, :class:`.Album`, :class:`.Track`, :class:`.Video`, :class:`.Playlist`
+            Valid models are :class:`.Artist`, :class:`.Album`, :class:`.Track`,
+            :class:`.Video`, :class:`.Playlist`
         :param limit: The amount of items you want included, up to 300.
         :param offset: The index you want to start searching at.
-        :return: Returns a dictionary of the different models, with the dictionary values containing the search results.
-            The dictionary also contains a 'top_hit' result for the most relevant result, limited to the specified types
+        :return: Returns a dictionary of the different models, with the dictionary
+            values containing the search results. The dictionary also contains a
+            'top_hit' result for the most relevant result, limited to the specified
+            types
         """
         if not models:
             models = SearchTypes
@@ -881,8 +901,10 @@ class Session:
         smoother way. Calls :class:`tidalapi.Playlist(session=session,
         playlist_id=playlist_id) <.Playlist>` internally.
 
-        :param playlist_id: (Optional) The TIDAL id of the playlist. You may want access to the methods without an id.
-        :return: Returns a :class:`.Playlist` object that has access to the session instance used.
+        :param playlist_id: (Optional) The TIDAL id of the playlist. You may want access
+            to the methods without an id.
+        :return: Returns a :class:`.Playlist` object that has access to the session
+            instance used.
         """
         try:
             return playlist.Playlist(session=self, playlist_id=playlist_id).factory()
@@ -896,7 +918,8 @@ class Session:
         <.Folder>` internally.
 
         :param folder_id:
-        :return: Returns a :class:`.Folder` object that has access to the session instance used.
+        :return: Returns a :class:`.Folder` object that has access to the session
+            instance used.
         """
         try:
             return playlist.Folder(session=self, folder_id=folder_id)
@@ -911,9 +934,12 @@ class Session:
         smoother way. Calls :class:`tidalapi.Track(session=session, track_id=track_id)
         <.Track>` internally.
 
-        :param track_id: (Optional) The TIDAL id of the Track. You may want access to the methods without an id.
-        :param with_album: (Optional) Whether to fetch the complete :class:`.Album` for the track or not
-        :return: Returns a :class:`.Track` object that has access to the session instance used.
+        :param track_id: (Optional) The TIDAL id of the Track. You may want access to
+            the methods without an id.
+        :param with_album: (Optional) Whether to fetch the complete :class:`.Album` for
+            the track or not
+        :return: Returns a :class:`.Track` object that has access to the session
+            instance used.
         """
         try:
             item = media.Track(session=self, media_id=track_id)
@@ -927,13 +953,16 @@ class Session:
             raise
 
     def get_tracks_by_isrc(self, isrc: str) -> list[media.Track]:
-        """Function to search all tracks with a specific ISRC code. (eg. "USSM12209515")
-        This method uses the TIDAL openapi (v2). See the apiref below for more details:
+        """Function to search all tracks with a specific ISRC code.
+
+        (eg. "USSM12209515") This method uses the TIDAL openapi (v2). See the apiref
+        below for more details:
         https://apiref.developer.tidal.com/apiref?spec=catalogue-v2&ref=get-tracks-v2
 
         :param isrc: The ISRC of the Track.
-        :return: Returns a list of :class:`.Track` objects that have access to the session instance used.
-                 An empty list will be returned if no tracks matches the ISRC
+        :return: Returns a list of :class:`.Track` objects that have access to the
+            session instance used. An empty list will be returned if no tracks matches
+            the ISRC
         """
         try:
             params = {
@@ -965,13 +994,16 @@ class Session:
             raise InvalidISRC
 
     def get_albums_by_barcode(self, barcode: str) -> list[album.Album]:
-        """Function to search all albums with a specific UPC code (eg. "196589525444")
-        This method uses the TIDAL openapi (v2). See the apiref below for more details:
+        """Function to search all albums with a specific UPC code (eg.
+
+        "196589525444") This method uses the TIDAL openapi (v2). See the apiref below
+        for more details:
         https://apiref.developer.tidal.com/apiref?spec=catalogue-v2&ref=get-albums-v2
 
         :param barcode: The UPC of the Album. Eg.
-        :return: Returns a list of :class:`.Album` objects that have access to the session instance used.
-                 An empty list will be returned if no tracks matches the ISRC
+        :return: Returns a list of :class:`.Album` objects that have access to the
+            session instance used. An empty list will be returned if no tracks matches
+            the ISRC
         """
         try:
             params = {
@@ -1001,8 +1033,10 @@ class Session:
         smoother way. Calls :class:`tidalapi.Video(session=session, video_id=video_id)
         <.Video>` internally.
 
-        :param video_id: (Optional) The TIDAL id of the Video. You may want access to the methods without an id.
-        :return: Returns a :class:`.Video` object that has access to the session instance used.
+        :param video_id: (Optional) The TIDAL id of the Video. You may want access to
+            the methods without an id.
+        :return: Returns a :class:`.Video` object that has access to the session
+            instance used.
         """
         try:
             return media.Video(session=self, media_id=video_id)
@@ -1015,8 +1049,10 @@ class Session:
         smoother way. Calls :class:`tidalapi.Artist(session=session,
         artist_id=artist_id) <.Artist>` internally.
 
-        :param artist_id: (Optional) The TIDAL id of the Artist. You may want access to the methods without an id.
-        :return: Returns a :class:`.Artist` object that has access to the session instance used.
+        :param artist_id: (Optional) The TIDAL id of the Artist. You may want access to
+            the methods without an id.
+        :return: Returns a :class:`.Artist` object that has access to the session
+            instance used.
         """
         try:
             return artist.Artist(session=self, artist_id=artist_id)
@@ -1029,8 +1065,10 @@ class Session:
         smoother way. Calls :class:`tidalapi.Album(session=session, album_id=album_id)
         <.Album>` internally.
 
-        :param album_id: (Optional) The TIDAL id of the Album. You may want access to the methods without an id.
-        :return: Returns a :class:`.Album` object that has access to the session instance used.
+        :param album_id: (Optional) The TIDAL id of the Album. You may want access to
+            the methods without an id.
+        :return: Returns a :class:`.Album` object that has access to the session
+            instance used.
         """
         try:
             return album.Album(session=self, album_id=album_id)
@@ -1042,8 +1080,10 @@ class Session:
         """Function to create a mix object with access to the session instance smoothly
         Calls :class:`tidalapi.Mix(session=session, mix_id=mix_id) <.Album>` internally.
 
-        :param mix_id: (Optional) The TIDAL id of the Mix. You may want access to the mix methods without an id.
-        :return: Returns a :class:`.Mix` object that has access to the session instance used.
+        :param mix_id: (Optional) The TIDAL id of the Mix. You may want access to the
+            mix methods without an id.
+        :return: Returns a :class:`.Mix` object that has access to the session instance
+            used.
         """
         try:
             return mix.Mix(session=self, mix_id=mix_id)
@@ -1056,8 +1096,10 @@ class Session:
         Calls :class:`tidalapi.MixV2(session=session, mix_id=mix_id) <.Album>`
         internally.
 
-        :param mix_id: (Optional) The TIDAL id of the Mix. You may want access to the mix methods without an id.
-        :return: Returns a :class:`.MixV2` object that has access to the session instance used.
+        :param mix_id: (Optional) The TIDAL id of the Mix. You may want access to the
+            mix methods without an id.
+        :return: Returns a :class:`.MixV2` object that has access to the session
+            instance used.
         """
         try:
             return mix.MixV2(session=self, mix_id=mix_id)
@@ -1072,10 +1114,11 @@ class Session:
         smoother way. Calls :class:`user.User(session=session, user_id=user_id) <.User>`
         internally.
 
-        :param user_id: (Optional) The TIDAL id of the User. You may want access to the methods without an id.
-        :return: Returns a :class:`.User` object that has access to the session instance used.
+        :param user_id: (Optional) The TIDAL id of the User. You may want access to the
+            methods without an id.
+        :return: Returns a :class:`.User` object that has access to the session instance
+            used.
         """
-
         return user.User(session=self, user_id=user_id).factory()
 
     def home(self, use_legacy_endpoint: bool = False) -> page.Page:

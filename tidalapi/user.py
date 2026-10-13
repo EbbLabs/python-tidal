@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """A module containing classes and functions related to tidal users.
 
-:class:`User` is a class with user information.
-:class:`Favorites` is class with a users favorites.
+:class:`User` is a class with user information. :class:`Favorites` is class with a users
+favorites.
 """
 
 from __future__ import annotations
@@ -153,7 +153,8 @@ class LoggedInUser(FetchedUser):
     def playlists(self) -> List[Union["Playlist", "UserPlaylist"]]:
         """Get the (personal) playlists created by the user.
 
-        :return: Returns a list of :class:`~tidalapi.playlist.Playlist` objects containing the playlists.
+        :return: Returns a list of :class:`~tidalapi.playlist.Playlist` objects
+            containing the playlists.
         """
         return cast(
             List[Union["Playlist", "UserPlaylist"]],
@@ -194,7 +195,8 @@ class LoggedInUser(FetchedUser):
         """Get the playlists created by the user, and the playlists favorited by the
         user. This function is limited to 50 by TIDAL, requiring pagination.
 
-        :return: Returns a list of :class:`~tidalapi.playlist.Playlist` objects containing the playlists.
+        :return: Returns a list of :class:`~tidalapi.playlist.Playlist` objects
+            containing the playlists.
         """
         params = {"limit": limit, "offset": offset}
         endpoint = "users/%s/playlistsAndFavoritePlaylists" % self.id
@@ -218,7 +220,8 @@ class LoggedInUser(FetchedUser):
         :param title: Playlist title
         :param description: Playlist description
         :param parent_id: Parent folder ID. Default: 'root' playlist folder
-        :return: Returns an object of :class:`~tidalapi.playlist.UserPlaylist` containing the newly created playlist
+        :return: Returns an object of :class:`~tidalapi.playlist.UserPlaylist`
+            containing the newly created playlist
         """
         params = {"name": title, "description": description, "folderId": parent_id}
         endpoint = "my-collection/playlists/folders/create-playlist"
@@ -241,7 +244,8 @@ class LoggedInUser(FetchedUser):
 
         :param title: Folder title
         :param parent_id: Folder parent ID. Default: 'root' playlist folder
-        :return: Returns an object of :class:`~tidalapi.playlist.Folder` containing the newly created object
+        :return: Returns an object of :class:`~tidalapi.playlist.Folder` containing the
+            newly created object
         """
         params = {"name": title, "folderId": parent_id}
         endpoint = "my-collection/playlists/folders/create-folder"
@@ -405,12 +409,16 @@ class Favorites:
         ).ok
 
     def add_mixes(self, mix_ids: list[str] | str, validate: bool = False) -> bool:
-        """Add one or more mixes (eg. artist, track mixes) to the users favorites (v2 endpoint)
-        Note: Default behaviour on missing IDs is FAIL
+        """Add one or more mixes (eg.
 
-        :param mix_ids: One or more mix_ids, usually associated to an artist radio or mix
+        artist, track mixes) to the users favorites (v2 endpoint) Note: Default
+        behaviour on missing IDs is FAIL
+
+        :param mix_ids: One or more mix_ids, usually associated to an artist radio or
+            mix
         :param validate: Validate if the request was completed successfully
-        :return: True if request was successful, False otherwise. If 'validate', added mixes will be checked.
+        :return: True if request was successful, False otherwise. If 'validate', added
+            mixes will be checked.
         """
         mix_ids = list_validate(mix_ids)
 
@@ -522,7 +530,8 @@ class Favorites:
         endpoint)
 
         :param trns: List of folder (or playlist) trns to be deleted
-        :param type: Type of trn: as string, either `folder` or `playlist`. Default `folder`
+        :param type: Type of trn: as string, either `folder` or `playlist`. Default
+            `folder`
         :return: A boolean indicating whether theś request was successful or not.
         """
         if type not in ("playlist", "folder"):
@@ -553,9 +562,12 @@ class Favorites:
     ) -> List["Artist"]:
         """Get the users favorite artists, using pagination.
 
-        :param order: Optional; A :class:`ArtistOrder` describing the ordering type when returning the user favorite artists. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.artist.Artist` objects containing the favorite artists.
+        :param order: Optional; A :class:`ArtistOrder` describing the ordering type when
+            returning the user favorite artists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.artist.Artist` objects containing the
+            favorite artists.
         """
         count = self.session.user.favorites.get_artists_count()
         return get_items(
@@ -573,9 +585,12 @@ class Favorites:
 
         :param limit: The number of artist you want returned.
         :param offset: The index of the first artist you want included.
-        :param order: Optional; A :class:`ArtistOrder` describing the ordering type when returning the user favorite artists. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` of :class:`~tidalapi.artist.Artist` objects containing the favorite artists.
+        :param order: Optional; A :class:`ArtistOrder` describing the ordering type when
+            returning the user favorite artists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` of :class:`~tidalapi.artist.Artist` objects containing
+            the favorite artists.
         """
         params = {"limit": limit, "offset": offset}
         if order:
@@ -614,9 +629,12 @@ class Favorites:
     ) -> List["Album"]:
         """Get the users favorite albums, using pagination.
 
-        :param order: Optional; A :class:`AlbumOrder` describing the ordering type when returning the user favorite albums. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.album.Album` objects containing the favorite albums.
+        :param order: Optional; A :class:`AlbumOrder` describing the ordering type when
+            returning the user favorite albums. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.album.Album` objects containing the
+            favorite albums.
         """
         count = self.session.user.favorites.get_albums_count()
         return get_items(
@@ -634,9 +652,12 @@ class Favorites:
 
         :param limit: The number of albums you want returned.
         :param offset: The index of the first album you want included.
-        :param order: Optional; A :class:`AlbumOrder` describing the ordering type when returning the user favorite albums. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` of :class:`~tidalapi.album.Album` objects containing the favorite albums.
+        :param order: Optional; A :class:`AlbumOrder` describing the ordering type when
+            returning the user favorite albums. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` of :class:`~tidalapi.album.Album` objects containing
+            the favorite albums.
         """
         params = {"limit": limit, "offset": offset}
         if order:
@@ -673,13 +694,16 @@ class Favorites:
     ) -> List["Playlist"]:
         """Get the users favorite playlists, using cursor-based pagination.
 
-        The v2 my-collection/playlists/folders endpoint uses cursor-based
-        pagination. Each response includes a ``cursor`` field that must be
-        passed to the next request to retrieve the following page.
+        The v2 my-collection/playlists/folders endpoint uses cursor-based pagination.
+        Each response includes a ``cursor`` field that must be passed to the next
+        request to retrieve the following page.
 
-        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite playlists.
+        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type
+            when returning the user favorite playlists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing
+            the favorite playlists.
         """
         playlists: List["Playlist"] = []
         cursor: Optional[str] = None
@@ -711,11 +735,14 @@ class Favorites:
         :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
         :param offset: The index of the first playlist to fetch. Note: this parameter is
             ignored by the TIDAL API for this endpoint. Use ``cursor`` for pagination.
-        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type
+            when returning the user favorite playlists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :param cursor: Cursor for fetching the next page of results. Obtained from
             :attr:`_last_playlists_cursor` after a previous call to this method.
-        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing the favorite playlists.
+        :return: A :class:`list` :class:`~tidalapi.playlist.Playlist` objects containing
+            the favorite playlists.
         """
         params = {
             "folderId": "root",
@@ -756,14 +783,17 @@ class Favorites:
 
         :param limit: The number of playlists you want returned (Note: Cannot exceed 50)
         :param offset: The index of the first playlist folder to fetch. Note: this
-            parameter is ignored by the TIDAL API for this endpoint. Use ``cursor``
-            for pagination.
-        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type when returning the user favorite playlists. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+            parameter is ignored by the TIDAL API for this endpoint. Use ``cursor`` for
+            pagination.
+        :param order: Optional; A :class:`PlaylistOrder` describing the ordering type
+            when returning the user favorite playlists. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
         :param parent_folder_id: Parent folder ID. Default: 'root' playlist folder
         :param cursor: Cursor for fetching the next page of results. Obtained from
             :attr:`_last_folders_cursor` after a previous call to this method.
-        :return: Returns a list of :class:`~tidalapi.playlist.Folder` objects containing the Folders.
+        :return: Returns a list of :class:`~tidalapi.playlist.Folder` objects containing
+            the Folders.
         """
         params = {
             "folderId": parent_folder_id,
@@ -813,9 +843,12 @@ class Favorites:
     ) -> List["Playlist"]:
         """Get the users favorite tracks, using pagination.
 
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.media.Track` objects containing the favorite tracks.
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the user favorite tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.media.Track` objects containing the
+            favorite tracks.
         """
         count = self.session.user.favorites.get_tracks_count()
         return get_items(
@@ -833,9 +866,12 @@ class Favorites:
 
         :param limit: The number of tracks you want returned.
         :param offset: The index of the first track you want included.
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user favorite tracks. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` of :class:`~tidalapi.media.Track` objects containing all of the favorite tracks.
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the user favorite tracks. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` of :class:`~tidalapi.media.Track` objects containing
+            all of the favorite tracks.
         """
         params = {"limit": limit, "offset": offset}
         if order:
@@ -873,9 +909,12 @@ class Favorites:
     ) -> List["Video"]:
         """Get the users favorite videos, using pagination.
 
-        :param order: Optional; A :class:`ItemOrder` describing the ordering type when returning the user items. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` :class:`~tidalapi.media.Video` objects containing the favorite videos.
+        :param order: Optional; A :class:`ItemOrder` describing the ordering type when
+            returning the user items. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` :class:`~tidalapi.media.Video` objects containing the
+            favorite videos.
         """
         count = self.session.user.favorites.get_videos_count()
         return get_items(
@@ -893,9 +932,12 @@ class Favorites:
 
         :param limit: The number of videos you want returned.
         :param offset: The index of the first video you want included.
-        :param order: Optional; A :class:`VideoOrder` describing the ordering type when returning the user favorite videos. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` of :class:`~tidalapi.media.Video` objects containing all the favorite videos
+        :param order: Optional; A :class:`VideoOrder` describing the ordering type when
+            returning the user favorite videos. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` of :class:`~tidalapi.media.Video` objects containing
+            all the favorite videos
         """
         params = {"limit": limit, "offset": offset}
         if order:
@@ -938,9 +980,12 @@ class Favorites:
 
         :param limit: The number of mixes you want returned.
         :param offset: The index of the first mix you want included.
-        :param order: Optional; A :class:`MixOrder` describing the ordering type when returning the user favorite mixes. eg.: "NAME, "DATE"
-        :param order_direction: Optional; A :class:`OrderDirection` describing the ordering direction when sorting by `order`. eg.: "ASC", "DESC"
-        :return: A :class:`list` of :class:`~tidalapi.media.Mix` objects containing the user favourite mixes & radio
+        :param order: Optional; A :class:`MixOrder` describing the ordering type when
+            returning the user favorite mixes. eg.: "NAME, "DATE"
+        :param order_direction: Optional; A :class:`OrderDirection` describing the
+            ordering direction when sorting by `order`. eg.: "ASC", "DESC"
+        :return: A :class:`list` of :class:`~tidalapi.media.Mix` objects containing the
+            user favourite mixes & radio
         """
         params = {"limit": limit, "offset": offset}
         if order:

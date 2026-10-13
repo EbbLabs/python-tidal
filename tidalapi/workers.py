@@ -6,10 +6,7 @@ log = logging.getLogger(__name__)
 
 
 def func_wrapper(args):
-    """
-    args: tuple(func, limit, offset, *extra_args)
-    Returns list of (index, item)
-    """
+    """Args: tuple(func, limit, offset, *extra_args) Returns list of (index, item)"""
     func, limit, offset, *extra_args = args
     try:
         items = func(limit, offset, *extra_args)
