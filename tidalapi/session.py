@@ -484,8 +484,8 @@ class Session:
         # self.client_enable_hires()
 
     def client_enable_hires(self):
-        """Swap `config.client_id` and `config.client_secret` for the PKCE pair, which is
-        the only one entitled to hi-res streams.
+        """Swap `config.client_id` and `config.client_secret` for the PKCE pair, which
+        is the only one entitled to hi-res streams.
 
         The limited input device login (:meth:`login_oauth`) still uses the original
         client, as TIDAL rejects the PKCE client on the device authorization endpoint.

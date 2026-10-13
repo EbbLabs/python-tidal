@@ -90,13 +90,13 @@ class Requests(object):
         """Refresh the access token, at most once for concurrent callers.
 
         Requests are often issued from several threads (e.g. the paginated workers). If
-        they all hit an expired token at the same time, each would POST the same
-        refresh token. TIDAL rotates refresh tokens, so every POST after the first
-        would use a token that has just been invalidated.
+        they all hit an expired token at the same time, each would POST the same refresh
+        token. TIDAL rotates refresh tokens, so every POST after the first would use a
+        token that has just been invalidated.
 
-        :param stale_access_token: The access token the caller's request was sent
-            with. If the session holds a different one by the time the lock is
-            acquired, another thread has already refreshed and no new refresh is made.
+        :param stale_access_token: The access token the caller's request was sent with.
+            If the session holds a different one by the time the lock is acquired,
+            another thread has already refreshed and no new refresh is made.
         :return: True if the session holds a valid, refreshed access token.
         """
         with self._refresh_lock:
@@ -125,8 +125,8 @@ class Requests(object):
     def _start_backoff_if_needed(self, response: requests.Response) -> None:
         """Hold back further requests after a rate limit or anti-abuse response.
 
-        Requests made while TIDAL is limiting or suspecting the account only prolong
-        it, and can lead to a permanent ban.
+        Requests made while TIDAL is limiting or suspecting the account only prolong it,
+        and can lead to a permanent ban.
         """
         if not self.config.backoff:
             return
