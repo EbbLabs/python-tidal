@@ -117,6 +117,10 @@ class Config:
     image_url: str = "https://resources.tidal.com/images/%s/%ix%i.jpg"
     image_url_origin: str = "https://resources.tidal.com/images/%s/origin.jpg"
     item_limit: int
+    #: Stop sending requests for a while after TIDAL answers with a rate limit
+    #: (HTTP 429) or an anti-abuse rejection. While backing off, requests raise
+    #: :class:`.TidalBackoffError` instead of reaching TIDAL. Enabled by default.
+    backoff: bool
     quality: str
     video_quality: str
     video_url: str = "https://resources.tidal.com/videos/%s/%ix%i.mp4"
@@ -138,10 +142,12 @@ class Config:
         video_quality: str = media.VideoQuality.default,
         item_limit: int = 1000,
         alac: bool = True,
+        backoff: bool = True,
     ):
         self.quality = quality
         self.video_quality = video_quality
         self.alac = alac
+        self.backoff = backoff
 
         if item_limit > 10000:
             log.warning(
@@ -231,8 +237,8 @@ class Session:
     #: A :class:`.User` object containing the currently logged in user.
     user: Optional[Union["FetchedUser", "LoggedInUser", "PlaylistCreator"]] = None
 
-    def __init__(self, config: Config = Config()):
-        self.config = config
+    def __init__(self, config: Optional[Config] = None):
+        self.config = config if config is not None else Config()
         self.request_session = requests.Session()
 
         # Objects for keeping the session across all modules.
@@ -244,6 +250,8 @@ class Session:
         self.parse_page = self.page.parse
 
         self.is_pkce = False  # True if current session is PKCE type, otherwise false
+        # The (client_id, client_secret) in use before `client_enable_hires` replaced them
+        self._device_client: Optional[Tuple[str, str]] = None
 
         self.type_conversions: List[TypeRelation] = [
             TypeRelation(
@@ -476,8 +484,22 @@ class Session:
         # self.client_enable_hires()
 
     def client_enable_hires(self):
+        """Swap `config.client_id` and `config.client_secret` for the PKCE pair, which is
+        the only one entitled to hi-res streams.
+
+        The limited input device login (:meth:`login_oauth`) still uses the original
+        client, as TIDAL rejects the PKCE client on the device authorization endpoint.
+        """
+        if self.config.client_id != self.config.client_id_pkce:
+            self._device_client = (self.config.client_id, self.config.client_secret)
         self.config.client_id = self.config.client_id_pkce
         self.config.client_secret = self.config.client_secret_pkce
+
+    def _device_client_credentials(self) -> Tuple[str, str]:
+        """The client_id and client_secret for the limited input device login."""
+        if self._device_client:
+            return self._device_client
+        return self.config.client_id, self.config.client_secret
 
     def pkce_login_url(self) -> str:
         """Returns the Login-URL to login via web browser.
@@ -581,7 +603,9 @@ class Session:
                 "access_token": {"data": self.access_token},
                 "refresh_token": {"data": self.refresh_token},
                 "is_pkce": {"data": self.is_pkce},
-                # "expiry_time": {"data": self.expiry_time},
+                "expiry_time": {
+                    "data": self.expiry_time.isoformat() if self.expiry_time else None
+                },
             }
             with session_file.open("w") as file:
                 json.dump(data, file)
@@ -596,12 +620,18 @@ class Session:
             return False
 
         assert self, "No session loaded"
+        expiry_time = None
+        if expiry_data := data.get("expiry_time", {}).get("data"):
+            try:
+                expiry_time = datetime.datetime.fromisoformat(expiry_data)
+            except ValueError:
+                log.info("Ignoring invalid expiry_time in %s", session_file)
         args = {
             "token_type": data.get("token_type", {}).get("data"),
             "access_token": data.get("access_token", {}).get("data"),
             "refresh_token": data.get("refresh_token", {}).get("data"),
             "is_pkce": data.get("is_pkce", {}).get("data"),
-            # "expiry_time": data.get("expiry_time", {}).get("data"),
+            "expiry_time": expiry_time,
         }
 
         return self.load_oauth_session(**args)
@@ -614,7 +644,8 @@ class Session:
         :rtype: :class:`LinkLogin`
         """
         url = "https://auth.tidal.com/v1/oauth2/device_authorization"
-        params = {"client_id": self.config.client_id, "scope": "r_usr w_usr w_sub"}
+        client_id, _ = self._device_client_credentials()
+        params = {"client_id": client_id, "scope": "r_usr w_usr w_sub"}
 
         request = self.request_session.post(url, params)
 
@@ -690,9 +721,10 @@ class Session:
         """
         expiry: float = link_login.expires_in if until_expiry else 1
         url = self.config.api_oauth2_token
+        client_id, client_secret = self._device_client_credentials()
         params = {
-            "client_id": self.config.client_id,
-            "client_secret": self.config.client_secret,
+            "client_id": client_id,
+            "client_secret": client_secret,
             "device_code": link_login.device_code,
             "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
             "scope": "r_usr w_usr w_sub",
@@ -750,6 +782,13 @@ class Session:
             seconds=json["expires_in"]
         )
         self.token_type = json["token_type"]
+        # TIDAL rotates refresh tokens: the response may carry a new one and the
+        # old one is then invalidated. Keep it, otherwise a persisted session ends
+        # up holding a dead refresh token and the next refresh logs the user out.
+        # When the field is absent the existing refresh token is still valid.
+        new_refresh_token = json.get("refresh_token")
+        if new_refresh_token:
+            self.refresh_token = new_refresh_token
         return True
 
     @property

@@ -16,8 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """A module containing functions relating to TIDAL api requests."""
 
+import datetime
 import json
 import logging
+import threading
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,7 +37,13 @@ from urllib.parse import urljoin
 
 import requests
 
-from tidalapi.exceptions import http_error_to_tidal_error
+from tidalapi.exceptions import (
+    AuthenticationError,
+    TidalBackoffError,
+    get_retry_after,
+    http_error_to_tidal_error,
+    is_abuse_response,
+)
 from tidalapi.types import JsonObj
 
 log = logging.getLogger(__name__)
@@ -45,6 +54,15 @@ Methods = Literal["GET", "POST", "PUT", "DELETE"]
 
 if TYPE_CHECKING:
     from tidalapi.session import Session
+
+
+#: Backoff after a rate limit (HTTP 429) without a Retry-After header, in seconds.
+RATE_LIMIT_BACKOFF = 60
+#: Backoff after an anti-abuse rejection without a Retry-After header, in seconds.
+ABUSE_BACKOFF = 30 * 60
+
+#: Refresh the access token this long before it expires, so requests don't race the expiry.
+TOKEN_EXPIRY_MARGIN = datetime.timedelta(seconds=60)
 
 
 class Requests(object):
@@ -61,6 +79,110 @@ class Requests(object):
         self.session = session
         self.config = session.config
         self.latest_err_response = requests.Response()
+        # Serializes access-token refreshes, see `_refresh_access_token`.
+        self._refresh_lock = threading.Lock()
+        # Backoff state, see `Config.backoff`.
+        self._backoff_lock = threading.Lock()
+        self._backoff_until = 0.0
+        self._backoff_reason = ""
+
+    def _refresh_access_token(self, stale_access_token: Optional[str]) -> bool:
+        """Refresh the access token, at most once for concurrent callers.
+
+        Requests are often issued from several threads (e.g. the paginated workers). If
+        they all hit an expired token at the same time, each would POST the same
+        refresh token. TIDAL rotates refresh tokens, so every POST after the first
+        would use a token that has just been invalidated.
+
+        :param stale_access_token: The access token the caller's request was sent
+            with. If the session holds a different one by the time the lock is
+            acquired, another thread has already refreshed and no new refresh is made.
+        :return: True if the session holds a valid, refreshed access token.
+        """
+        with self._refresh_lock:
+            if self.session.access_token != stale_access_token:
+                return True
+            refresh_token = self.session.refresh_token
+            if not refresh_token:
+                return False
+            return self.session.token_refresh(refresh_token)
+
+    def backoff_remaining(self) -> float:
+        """Seconds left of the current backoff, 0 if requests are not being held back.
+
+        Backoff only ever starts if :attr:`Config.backoff` is enabled.
+        """
+        with self._backoff_lock:
+            return max(0.0, self._backoff_until - time.monotonic())
+
+    def _raise_if_backing_off(self) -> None:
+        with self._backoff_lock:
+            remaining = self._backoff_until - time.monotonic()
+            reason = self._backoff_reason
+        if remaining > 0:
+            raise TidalBackoffError(remaining, reason)
+
+    def _start_backoff_if_needed(self, response: requests.Response) -> None:
+        """Hold back further requests after a rate limit or anti-abuse response.
+
+        Requests made while TIDAL is limiting or suspecting the account only prolong
+        it, and can lead to a permanent ban.
+        """
+        if not self.config.backoff:
+            return
+        # Only inspect error responses, this runs for every request
+        if response.status_code == 429:
+            retry_after = get_retry_after(response)
+            seconds = retry_after if retry_after > 0 else RATE_LIMIT_BACKOFF
+            reason = "rate limited (HTTP 429)"
+        elif is_abuse_response(response):
+            retry_after = get_retry_after(response)
+            seconds = retry_after if retry_after > 0 else ABUSE_BACKOFF
+            reason = f"abuse detected (HTTP 403): {response.text[:200]}"
+        else:
+            return
+        log.warning("Backing off from TIDAL for %ds: %s", seconds, reason)
+        with self._backoff_lock:
+            # Never shorten a backoff that is already running
+            until = time.monotonic() + seconds
+            if until > self._backoff_until:
+                self._backoff_until = until
+                self._backoff_reason = reason
+
+    def _access_token_expired(self) -> bool:
+        """Whether the session's access token is expired, or about to be.
+
+        TIDAL signals an expired token with a `userMessage` that has changed over time,
+        so relying on that alone lets raw 401s reach the caller. The expiry time is
+        checked up front whenever it is known.
+        """
+        expiry_time = self.session.expiry_time
+        if not expiry_time or not self.session.refresh_token:
+            return False
+        if expiry_time.tzinfo is None:
+            now = datetime.datetime.utcnow()
+        else:
+            now = datetime.datetime.now(datetime.timezone.utc)
+        return expiry_time - now <= TOKEN_EXPIRY_MARGIN
+
+    def _send(
+        self,
+        method: Methods,
+        url: str,
+        request_params: Mapping[str, Union[str, int, None]],
+        data: Optional[JsonObj],
+        headers: MutableMapping[str, str],
+    ) -> requests.Response:
+        """Send a request with the session's current access token."""
+        self._raise_if_backing_off()
+        access_token = self.session.access_token
+        if self.session.token_type and access_token is not None:
+            headers["authorization"] = self.session.token_type + " " + access_token
+        response = self.session.request_session.request(
+            method, url, params=request_params, data=data, headers=headers
+        )
+        self._start_backoff_if_needed(response)
+        return response
 
     def basic_request(
         self,
@@ -71,6 +193,7 @@ class Requests(object):
         headers: Optional[MutableMapping[str, str]] = None,
         base_url: Optional[str] = None,
     ) -> requests.Response:
+        self._raise_if_backing_off()
         request_params = {
             "sessionId": self.session.session_id,
             "countryCode": self.session.country_code,
@@ -92,17 +215,21 @@ class Requests(object):
         if "User-Agent" not in headers:
             headers["User-Agent"] = self.user_agent
 
-        if self.session.token_type and self.session.access_token is not None:
-            headers["authorization"] = (
-                self.session.token_type + " " + self.session.access_token
-            )
+        if self._access_token_expired():
+            log.debug("The access token is about to expire, trying to refresh it.")
+            try:
+                self._refresh_access_token(self.session.access_token)
+            except AuthenticationError as e:
+                # Don't fail the request: the token may still be accepted, and if
+                # it isn't, the expired-token handling below reports the failure.
+                log.warning("Proactive access token refresh failed: %s", e)
+
         if base_url is None:
             base_url = self.session.config.api_v1_location
 
         url = urljoin(base_url, path)
-        request = self.session.request_session.request(
-            method, url, params=request_params, data=data, headers=headers
-        )
+        sent_access_token = self.session.access_token
+        request = self._send(method, url, request_params, data, headers)
 
         refresh_token = self.session.refresh_token
         if not request.ok and refresh_token:
@@ -116,9 +243,11 @@ class Requests(object):
                 "The token has expired."
             ):
                 log.debug("The access token has expired, trying to refresh it.")
-                refreshed = self.session.token_refresh(refresh_token)
+                refreshed = self._refresh_access_token(sent_access_token)
                 if refreshed:
-                    request = self.basic_request(method, url, params, data, headers)
+                    # Retry exactly once. If TIDAL still reports an expired token
+                    # (e.g. clock skew), return that response instead of looping.
+                    request = self._send(method, url, request_params, data, headers)
             else:
                 log.debug("HTTP error on %d", request.status_code)
                 log.debug("Response text\n%s", request.text)
