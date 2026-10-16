@@ -196,6 +196,45 @@ def test_failed_proactive_refresh_does_not_fail_the_request():
     assert session.request.basic_request("GET", "tracks/1").ok
 
 
+def _load_oauth_session(expiry_time):
+    session = _refreshing_session(None)
+    session.request_session.request.return_value = fake_response(
+        200, {"sessionId": "sid", "countryCode": "US", "userId": 1}
+    )
+    with mock.patch.object(tidalapi.user.User, "factory"):
+        assert session.load_oauth_session(
+            "Bearer", "old-access", "old-refresh", expiry_time, is_pkce=True
+        )
+    return session
+
+
+def test_load_oauth_session_accepts_expiry_time_string():
+    expired = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+
+    session = _load_oauth_session(str(expired))
+
+    # The expired token is refreshed up front, which sets a new expiry time
+    session.request_session.post.assert_called_once()
+    assert session.access_token == "new-access"
+    assert session.expiry_time > datetime.datetime.utcnow()
+
+
+def test_load_oauth_session_accepts_iso_format_expiry_time():
+    expiry_time = datetime.datetime(2030, 1, 2, 3, 4, 5)
+
+    session = _load_oauth_session(expiry_time.isoformat())
+
+    assert session.expiry_time == expiry_time
+    session.request_session.post.assert_not_called()
+
+
+def test_load_oauth_session_ignores_invalid_expiry_time_string():
+    session = _load_oauth_session("None")
+
+    assert session.expiry_time is None
+    session.request_session.post.assert_not_called()
+
+
 def test_session_file_round_trips_expiry_time(tmp_path):
     session_file = tmp_path / "session.json"
     expiry_time = datetime.datetime(2030, 1, 2, 3, 4, 5)

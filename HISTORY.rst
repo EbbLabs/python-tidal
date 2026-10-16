@@ -21,6 +21,7 @@ v0.9.0
 * Bugfix: Non-JSON error responses and `Retry-After` given as a date no longer break error handling - tehkillerbee_
 * Bugfix: Parsing tracks and albums no longer fails when TIDAL returns no or empty artist information - tehkillerbee_
 * Parsed `Track` flags (`pay_to_stream`, `premium_streaming_only`, `editable`, `upload`, `spotlighted`) are now `False` instead of `None` when TIDAL omits them, and `url` is an empty string - tehkillerbee_
+* Bugfix: `load_oauth_session` accepts the expiry time as an ISO 8601 string, as applications that store it as text pass it. Since the token is now refreshed before it expires, such a string made every request fail - Petru101_
 
 v0.8.11
 --------
@@ -323,4 +324,5 @@ v0.6.2
 .. _nilathedragon: https://github.com/nilathedragon
 .. _semohr: https://github.com/semohr
 .. _rafrombrc: https://github.com/rafrombrc
+.. _Petru101: https://github.com/Petru101
 
