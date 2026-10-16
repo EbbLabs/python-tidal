@@ -167,3 +167,22 @@ API Reference
 .. autoclass:: Mix
     :members:
     :undoc-members:
+
+`tidalapi.playlog`
+------------------
+
+.. automodule:: tidalapi.playlog
+
+.. autoclass:: PlaybackSession
+    :members:
+
+.. autoclass:: PlaybackAction
+    :members:
+
+.. autoclass:: SourceType
+    :members:
+    :undoc-members:
+
+.. autoclass:: ActionType
+    :members:
+    :undoc-members:

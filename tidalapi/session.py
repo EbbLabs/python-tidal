@@ -34,6 +34,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -56,7 +57,7 @@ from tidalapi.exceptions import (
 )
 from tidalapi.types import JsonObj
 
-from . import album, artist, genre, media, mix, page, playlist, request, user
+from . import album, artist, genre, media, mix, page, playlist, playlog, request, user
 
 if TYPE_CHECKING:
     from tidalapi.user import FetchedUser, LoggedInUser, PlaylistCreator
@@ -116,6 +117,8 @@ class Config:
     api_v1_location: str = "https://api.tidal.com/v1/"
     api_v2_location: str = "https://api.tidal.com/v2/"
     openapi_v2_location: str = "https://openapi.tidal.com/v2/"
+    #: Where plays are reported, see :meth:`Session.report_playback`
+    event_producer_location: str = "https://ec.tidal.com/api/event-batch"
     client_id: str
     client_secret: str
     image_url: str = "https://resources.tidal.com/images/%s/%ix%i.jpg"
@@ -247,6 +250,7 @@ class Session:
 
         # Objects for keeping the session across all modules.
         self.request = request.Requests(session=self)
+        self.playlog = playlog.PlayLog(session=self)
         self.genre = genre.Genre(session=self)
 
         self.parse_user = user.User(self, None).parse
@@ -885,6 +889,49 @@ class Session:
             )
 
         return result
+
+    def report_playback(
+        self,
+        playback_sessions: Iterable[playlog.PlaybackSession],
+        app_version: Optional[str] = None,
+    ) -> bool:
+        """Report plays to TIDAL, so they show up in Recently played on all devices and
+        count for recommendations.
+
+        Fetching and playing a stream doesn't count as a play on its own. Report each
+        play of a track once it ends (e.g. when the next track starts), if it lasted at
+        least 30 seconds, as TIDAL counts plays from then on.
+
+        Example::
+
+            session.report_playback(
+                [
+                    PlaybackSession(
+                        track_id=track.id,
+                        start_timestamp=started_at_ms,
+                        end_timestamp=ended_at_ms,
+                        end_position=position_seconds,
+                        source_type=SourceType.album,
+                        source_id=track.album.id,
+                    )
+                ],
+                app_version="My Player 1.0",
+            )
+
+        :param playback_sessions: The plays to report, see
+            :class:`~tidalapi.playlog.PlaybackSession`
+        :param app_version: The name and version of the application that played them.
+            Defaults to the tidalapi version
+        :return: True if TIDAL accepted the plays, False if it rejected them (they
+            would be rejected again, so they shouldn't be sent again)
+        :raises: :class:`requests.RequestException` or a :class:`.TidalAPIError` if
+            the plays couldn't be sent (e.g. offline). They can be sent again later.
+        """
+        if app_version is None:
+            from tidalapi import __version__
+
+            app_version = f"tidalapi {__version__}"
+        return self.playlog.report(playback_sessions, app_version)
 
     def check_login(self) -> bool:
         """Returns true if current session is valid, false otherwise."""

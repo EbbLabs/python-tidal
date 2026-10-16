@@ -7,6 +7,12 @@ from .media import Quality, Track, Video, VideoQuality  # noqa: F401
 from .mix import Mix, MixV2  # noqa: F401
 from .page import Page  # noqa: F401
 from .playlist import Playlist, UserPlaylist  # noqa: F401
+from .playlog import (  # noqa: F401
+    ActionType,
+    PlaybackAction,
+    PlaybackSession,
+    SourceType,
+)
 from .request import Requests  # noqa: F401
 from .session import Config, Session  # noqa: F401
 from .user import (  # noqa: F401
