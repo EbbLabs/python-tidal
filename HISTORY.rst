@@ -5,6 +5,7 @@ History
 
 v0.9.0
 ------
+* Added `Session.report_playback` to report plays to TIDAL, so they show up in Recently played on all devices and count for recommendations (Fixes #401) - Petru101_
 * (BREAKING!) Drop support for python3.9 and older, python 3.10 or newer is now required - tehkillerbee_
 * Added support for python 3.14 - tehkillerbee_
 * Removed unused runtime dependency `pyaes` - tehkillerbee_
@@ -323,4 +324,5 @@ v0.6.2
 .. _nilathedragon: https://github.com/nilathedragon
 .. _semohr: https://github.com/semohr
 .. _rafrombrc: https://github.com/rafrombrc
+.. _Petru101: https://github.com/Petru101
 
