@@ -410,7 +410,7 @@ class Session:
 
         if expiry_time is not None and expiry_time.tzinfo is None:
             # Treat naive datetimes (e.g. from legacy utcnow()) as UTC
-            expiry_time = expiry_time.replace(tzinfo=datetime.timezone.utc)
+            expiry_time = expiry_time.replace(tzinfo=datetime.UTC)
 
         self.token_type = token_type
         self.access_token = access_token
@@ -713,9 +713,9 @@ class Session:
         :rtype: bool
         """
         self.access_token = json["access_token"]
-        self.expiry_time = datetime.datetime.now(
-            datetime.timezone.utc
-        ) + datetime.timedelta(seconds=json["expires_in"])
+        self.expiry_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+            seconds=json["expires_in"]
+        )
         self.refresh_token = json["refresh_token"]
         self.token_type = json["token_type"]
         session = self.request.request("GET", "sessions")
@@ -805,9 +805,9 @@ class Session:
             log.warning("The refresh token has expired, a new login is required.")
             return False
         self.access_token = json["access_token"]
-        self.expiry_time = datetime.datetime.now(
-            datetime.timezone.utc
-        ) + datetime.timedelta(seconds=json["expires_in"])
+        self.expiry_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+            seconds=json["expires_in"]
+        )
         self.token_type = json["token_type"]
         # TIDAL rotates refresh tokens: the response may carry a new one and the
         # old one is then invalidated. Keep it, otherwise a persisted session ends

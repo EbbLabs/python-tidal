@@ -156,9 +156,9 @@ class Requests:
         if not expiry_time or not self.session.refresh_token:
             return False
         if expiry_time.tzinfo is None:
-            now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         else:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.UTC)
         return expiry_time - now <= TOKEN_EXPIRY_MARGIN
 
     def _send(
