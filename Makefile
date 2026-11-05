@@ -15,7 +15,7 @@ develop:
 	poetry install
 
 shell:
-	poetry shell
+	. "$$(poetry env info --path)/bin/activate" && exec "$${SHELL:-bash}"
 
 install:
 	rm -rf dist
