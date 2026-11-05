@@ -228,14 +228,16 @@ def _load_oauth_session(expiry_time):
 
 
 def test_load_oauth_session_accepts_expiry_time_string():
-    expired = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    # A naive string, as stored by applications using a previous tidalapi version
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    expired = now - datetime.timedelta(days=1)
 
     session = _load_oauth_session(str(expired))
 
     # The expired token is refreshed up front, which sets a new expiry time
     session.request_session.post.assert_called_once()
     assert session.access_token == "new-access"
-    assert session.expiry_time > datetime.datetime.utcnow()
+    assert session.expiry_time > datetime.datetime.now(datetime.timezone.utc)
 
 
 def test_load_oauth_session_accepts_iso_format_expiry_time():
@@ -243,7 +245,25 @@ def test_load_oauth_session_accepts_iso_format_expiry_time():
 
     session = _load_oauth_session(expiry_time.isoformat())
 
+    assert session.expiry_time == expiry_time.replace(tzinfo=datetime.timezone.utc)
+    session.request_session.post.assert_not_called()
+
+
+def test_load_oauth_session_accepts_timezone_aware_expiry_time_string():
+    expiry_time = datetime.datetime(2030, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)
+
+    session = _load_oauth_session(str(expiry_time))
+
     assert session.expiry_time == expiry_time
+    session.request_session.post.assert_not_called()
+
+
+def test_load_oauth_session_treats_naive_datetime_as_utc():
+    expiry_time = datetime.datetime(2030, 1, 2, 3, 4, 5)
+
+    session = _load_oauth_session(expiry_time)
+
+    assert session.expiry_time == expiry_time.replace(tzinfo=datetime.timezone.utc)
     session.request_session.post.assert_not_called()
 
 

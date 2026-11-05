@@ -395,7 +395,8 @@ class Session:
         :param refresh_token: (Optional) A refresh token that lets you get a new access
             token after it has expired
         :param expiry_time: (Optional) The datetime the access token will expire. A
-            string in ISO 8601 format (e.g. ``str(datetime)``) is accepted too
+            string in ISO 8601 format (e.g. ``str(datetime)``) is accepted too. Values
+            without a timezone are treated as UTC
         :param is_pkce: (Optional) Is session pkce?
         :return: True if we believe the login was successful, otherwise false.
         """
@@ -406,6 +407,10 @@ class Session:
             except ValueError:
                 log.info("Ignoring invalid expiry_time %r", expiry_time)
                 expiry_time = None
+
+        if expiry_time is not None and expiry_time.tzinfo is None:
+            # Treat naive datetimes (e.g. from legacy utcnow()) as UTC
+            expiry_time = expiry_time.replace(tzinfo=datetime.timezone.utc)
 
         self.token_type = token_type
         self.access_token = access_token
