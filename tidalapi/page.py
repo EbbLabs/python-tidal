@@ -19,16 +19,12 @@ Module for parsing TIDAL's pages format found at https://listen.tidal.com/v1/pag
 
 import copy
 import logging
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Type,
     Union,
     cast,
 )
@@ -64,7 +60,7 @@ PageCategoriesV2 = Union[
     "HorizontalListWithContext",
 ]
 
-AllCategoriesV2 = Union[PageCategoriesV2]
+AllCategoriesV2 = PageCategoriesV2
 
 log = logging.getLogger(__name__)
 
@@ -78,11 +74,9 @@ class Page:
     """
 
     title: str = ""
-    categories: Optional[List[Union["AllCategories", "AllCategoriesV2"]]] = None
-    _categories_iter: Optional[Iterator[Union["AllCategories", "AllCategoriesV2"]]] = (
-        None
-    )
-    _items_iter: Optional[Iterator[Callable[..., Any]]] = None
+    categories: list[Union["AllCategories", "AllCategoriesV2"]] | None = None
+    _categories_iter: Iterator[Union["AllCategories", "AllCategoriesV2"]] | None = None
+    _items_iter: Iterator[Callable[..., Any]] | None = None
     page_category: "PageCategory"
     page_category_v2: "PageCategoryV2"
     request: "Requests"
@@ -99,7 +93,7 @@ class Page:
             raise AttributeError("No categories found")
         self._categories_iter = iter(self.categories)
         self._category = next(self._categories_iter)
-        self._items_iter = iter(cast(List[Callable[..., Any]], self._category.items))
+        self._items_iter = iter(cast(list[Callable[..., Any]], self._category.items))
         return self
 
     def __next__(self) -> Callable[..., Any]:
@@ -112,7 +106,7 @@ class Page:
                 raise AttributeError("No categories found")
             self._category = next(self._categories_iter)
             self._items_iter = iter(
-                cast(List[Callable[..., Any]], self._category.items)
+                cast(list[Callable[..., Any]], self._category.items)
             )
             return self.__next__()
         return item
@@ -138,7 +132,7 @@ class Page:
 
         return copy.copy(self)
 
-    def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> "Page":
+    def get(self, endpoint: str, params: dict[str, Any] | None = None) -> "Page":
         """Retrieve a page from the specified endpoint, overwrites the calling page.
 
         :param params: Parameter to retrieve the page with
@@ -175,15 +169,15 @@ class More:
 
 class PageCategory:
     type = None
-    title: Optional[str] = None
-    description: Optional[str] = ""
+    title: str | None = None
+    description: str | None = ""
     request: "Requests"
-    _more: Optional[More] = None
+    _more: More | None = None
 
     def __init__(self, session: "Session"):
         self.session = session
         self.request = session.request
-        self.item_types: Dict[str, Callable[..., Any]] = {
+        self.item_types: dict[str, Callable[..., Any]] = {
             "ALBUM_LIST": self.session.parse_album,
             "ARTIST_LIST": self.session.parse_artist,
             "TRACK_LIST": self.session.parse_track,
@@ -228,7 +222,7 @@ class PageCategory:
 
         return category.parse(json_obj)
 
-    def show_more(self) -> Optional[Page]:
+    def show_more(self) -> Page | None:
         """Get the full list of items on their own :class:`.Page` from a
         :class:`.PageCategory`
 
@@ -251,14 +245,14 @@ class PageCategoryV2:
     """
 
     # Registry mapping 'type' strings to subclass types
-    _type_map: Dict[str, Type["PageCategoryV2"]] = {}
+    _type_map: dict[str, type["PageCategoryV2"]] = {}
 
     # Common metadata fields for all category types
-    type: Optional[str] = None
-    module_id: Optional[str] = None
-    title: Optional[str] = None
-    subtitle: Optional[str] = None
-    description: Optional[str] = ""
+    type: str | None = None
+    module_id: str | None = None
+    title: str | None = None
+    subtitle: str | None = None
+    description: str | None = ""
     _more: Optional["More"] = None
 
     def __init__(self, session: "Session"):
@@ -271,7 +265,7 @@ class PageCategoryV2:
         self.request = session.request
 
         # Common item parsers by type (can be used by subclasses like SimpleList)
-        self.item_types: Dict[str, Callable[..., Any]] = {
+        self.item_types: dict[str, Callable[..., Any]] = {
             "PLAYLIST": self.session.parse_playlist,
             "VIDEO": self.session.parse_video,
             "TRACK": self.session.parse_track,
@@ -297,7 +291,7 @@ class PageCategoryV2:
 
         return decorator
 
-    def parse_item(self, list_item: Dict) -> "PageCategoryV2":
+    def parse_item(self, list_item: dict) -> "PageCategoryV2":
         """Factory method that creates the correct subclass instance based on the 'type'
         field in item Dict, parses base fields, and then calls subclass parse()."""
         category_type = list_item.get("type")
@@ -309,7 +303,7 @@ class PageCategoryV2:
         instance.parse(list_item)
         return instance
 
-    def _parse_base(self, list_item: Dict):
+    def _parse_base(self, list_item: dict):
         """Parse fields common to all categories."""
         self.type = list_item.get("type")
         self.module_id = list_item.get("moduleId")
@@ -322,7 +316,7 @@ class PageCategoryV2:
         """Subclasses implement this method to parse category-specific data."""
         raise NotImplementedError("Subclasses must implement parse()")
 
-    def view_all(self) -> Optional[Page]:
+    def view_all(self) -> Page | None:
         """View all items in a Get the full list of items on their own :class:`.Page`
         from a :class:`.PageCategory`
 
@@ -339,7 +333,7 @@ class SimpleList(PageCategoryV2):
 
     def __init__(self, session: "Session"):
         super().__init__(session)
-        self.items: List[Any] = []
+        self.items: list[Any] = []
 
     def parse(self, json_obj: "JsonObj"):
         self.items = [
@@ -378,7 +372,7 @@ class TrackList(PageCategoryV2):
 
     def __init__(self, session: "Session"):
         super().__init__(session)
-        self.items: List[Any] = []
+        self.items: list[Any] = []
 
     def parse(self, json_obj: "JsonObj"):
         self.items = [
@@ -391,7 +385,7 @@ class TrackList(PageCategoryV2):
 class FeaturedItems(PageCategory):
     """Items that have been featured by TIDAL."""
 
-    items: Optional[List["PageItem"]] = None
+    items: list["PageItem"] | None = None
 
     def __init__(self, session: "Session"):
         super().__init__(session)
@@ -410,7 +404,7 @@ class FeaturedItems(PageCategory):
 class PageLinks(PageCategory):
     """A list of :class:`.PageLink` to other parts of TIDAL."""
 
-    items: Optional[List["PageLink"]] = None
+    items: list["PageLink"] | None = None
 
     def parse(self, json_obj: JsonObj) -> "PageLinks":
         """Parse the list of links from TIDAL.
@@ -431,7 +425,7 @@ class ItemList(PageCategory):
     """A list of items from TIDAL, can be a list of mixes, for example, or a list of
     playlists and mixes in some cases."""
 
-    items: Optional[List[Any]] = None
+    items: list[Any] | None = None
 
     def parse(self, json_obj: JsonObj) -> "ItemList":
         """Parse a list of items on TIDAL from the pages endpoints.
@@ -443,8 +437,8 @@ class ItemList(PageCategory):
         self.title = json_obj["title"]
         item_type = json_obj["type"]
         list_key = "pagedList"
-        session: Optional["Session"] = None
-        parse: Optional[Callable[..., Any]] = None
+        session: Session | None = None
+        parse: Callable[..., Any] | None = None
 
         if item_type in self.item_types.keys():
             parse = self.item_types[item_type]
@@ -459,7 +453,7 @@ class ItemList(PageCategory):
                 item["item"]["artistRoles"] = item["roles"]
             session = self.session
         else:
-            raise NotImplementedError("PageType {} not implemented".format(item_type))
+            raise NotImplementedError(f"PageType {item_type} not implemented")
 
         self.items = self.request.map_json(json_obj[list_key], parse, session)
 
@@ -541,13 +535,13 @@ class PageItem:
         raise NotImplementedError(f"PageItem type {self.type} not implemented")
 
 
-class TextBlock(object):
+class TextBlock:
     """A block of text, with a named icon, which seems to be left up to the
     application."""
 
     text: str = ""
     icon: str = ""
-    items: Optional[List[str]] = None
+    items: list[str] | None = None
 
     def __init__(self, session: "Session"):
         self.session = session
@@ -563,9 +557,9 @@ class TextBlock(object):
 class LinkList(PageCategory):
     """A list of items containing links, e.g. social links or articles."""
 
-    items: Optional[List[Any]] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
+    items: list[Any] | None = None
+    title: str | None = None
+    description: str | None = None
 
     def parse(self, json_obj: JsonObj) -> "LinkList":
         self.items = json_obj["items"]
@@ -575,10 +569,10 @@ class LinkList(PageCategory):
         return copy.copy(self)
 
 
-class ItemHeader(object):
+class ItemHeader:
     """Single item in a "category" of the page."""
 
-    items: Optional[List[Any]] = None
+    items: list[Any] | None = None
 
     def __init__(self, item: Any):
         self.items = [item]

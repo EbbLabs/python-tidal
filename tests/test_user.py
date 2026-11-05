@@ -796,10 +796,7 @@ def add_remove(object_id, add, remove, objects):
             model = type(item).__name__
             name = item.name
     if exists:
-        reason = (
-            "%s '%s' is already favorited, skipping to avoid changing the date it was favorited"
-            % (model, name)
-        )
+        reason = f"{model} '{name}' is already favorited, skipping to avoid changing the date it was favorited"
         pytest.skip(reason)
 
     current_time = datetime.datetime.now(tz=dateutil.tz.tzutc())

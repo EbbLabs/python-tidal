@@ -1,9 +1,9 @@
 # Copyright (C) 2023- The Tidalapi Developers
 
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 
-JsonObj = Dict[str, Any]
+JsonObj = dict[str, Any]
 
 
 class AlbumOrder(Enum):

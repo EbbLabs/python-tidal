@@ -17,9 +17,10 @@
 """A module containing information and functions related to TIDAL artists."""
 
 import copy
+from collections.abc import Mapping
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, List, Mapping, NoReturn, Optional, Union, cast
+from typing import TYPE_CHECKING, NoReturn, Optional, cast
 from warnings import warn
 
 import dateutil.parser
@@ -39,20 +40,20 @@ DEFAULT_ARTIST_IMG = "1e01cdb6-f15d-4d8b-8440-a047976c1cac"
 
 
 class Artist:
-    id: Optional[int] = -1
-    name: Optional[str] = None
-    roles: Optional[List["Role"]] = None
+    id: int | None = -1
+    name: str | None = None
+    roles: list["Role"] | None = None
     role: Optional["Role"] = None
-    picture: Optional[str] = None
-    user_date_added: Optional[datetime] = None
-    bio: Optional[str] = None
+    picture: str | None = None
+    user_date_added: datetime | None = None
+    bio: str | None = None
 
     # Direct URL to https://listen.tidal.com/artist/<artist_id>
     listen_url: str = ""
     # Direct URL to https://tidal.com/browse/artist/<artist_id>
     share_url: str = ""
 
-    def __init__(self, session: "Session", artist_id: Optional[str]):
+    def __init__(self, session: "Session", artist_id: str | None):
         """Initialize the :class:`Artist` object, given a TIDAL artist ID :param
         session: The current TIDAL :class:`Session` :param str artist_id: TIDAL artist
         ID :raises: Raises :class:`exceptions.ObjectNotFound`"""
@@ -62,9 +63,9 @@ class Artist:
 
         if self.id:
             try:
-                request = self.request.request("GET", "artists/%s" % self.id)
+                request = self.request.request("GET", f"artists/{self.id}")
             except ObjectNotFound as e:
-                e.args = ("Artist with id %s not found" % self.id,)
+                e.args = (f"Artist with id {self.id} not found",)
                 raise e
             except TooManyRequests as e:
                 e.args = ("Artist unavailable",)
@@ -87,7 +88,7 @@ class Artist:
         self.roles = None
         self.role = None
         if json_obj.get("type") or json_obj.get("artistTypes"):
-            roles: List["Role"] = []
+            roles: list[Role] = []
             for role in json_obj.get("artistTypes", [json_obj.get("type")]):
                 roles.append(Role(role))
 
@@ -109,7 +110,7 @@ class Artist:
 
         return copy.copy(self)
 
-    def parse_artists(self, json_obj: List[JsonObj]) -> List["Artist"]:
+    def parse_artists(self, json_obj: list[JsonObj]) -> list["Artist"]:
         """Parses a list of TIDAL artists, returns a list of :class:`Artist` objects
         Made for use within the python tidalapi module.
 
@@ -120,16 +121,16 @@ class Artist:
         return list(map(self.parse_artist, json_obj))
 
     def _get_albums(
-        self, params: Optional[Mapping[str, Union[int, str, None]]] = None
-    ) -> List["Album"]:
+        self, params: Mapping[str, int | str | None] | None = None
+    ) -> list["Album"]:
         return cast(
-            List["Album"],
+            list["Album"],
             self.request.map_request(
                 f"artists/{self.id}/albums", params, parse=self.session.parse_album
             ),
         )
 
-    def get_albums(self, limit: Optional[int] = None, offset: int = 0) -> List["Album"]:
+    def get_albums(self, limit: int | None = None, offset: int = 0) -> list["Album"]:
         """Queries TIDAL for the artists albums.
 
         :return: A list of :class:`Albums<tidalapi.album.Album>`
@@ -138,8 +139,8 @@ class Artist:
         return self._get_albums(params)
 
     def get_albums_ep_singles(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List["Album"]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list["Album"]:
         warn(
             "This method is deprecated an will be removed in a future release. Use instead `get_ep_singles`",
             DeprecationWarning,
@@ -149,8 +150,8 @@ class Artist:
         return self.get_ep_singles(limit=limit, offset=offset)
 
     def get_ep_singles(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List["Album"]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list["Album"]:
         """Queries TIDAL for the artists extended plays and singles.
 
         :return: A list of :class:`Albums <tidalapi.album.Album>`
@@ -159,8 +160,8 @@ class Artist:
         return self._get_albums(params)
 
     def get_albums_other(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List["Album"]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list["Album"]:
         warn(
             "This method is deprecated an will be removed in a future release. Use instead `get_other`",
             DeprecationWarning,
@@ -169,7 +170,7 @@ class Artist:
 
         return self.get_other(limit=limit, offset=offset)
 
-    def get_other(self, limit: Optional[int] = None, offset: int = 0) -> List["Album"]:
+    def get_other(self, limit: int | None = None, offset: int = 0) -> list["Album"]:
         """Queries TIDAL for albums the artist has appeared on as a featured artist.
 
         :return: A list of :class:`Albums <tidalapi.album.Album>`
@@ -178,15 +179,15 @@ class Artist:
         return self._get_albums(params)
 
     def get_top_tracks(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List["Track"]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list["Track"]:
         """Queries TIDAL for the artists tracks, sorted by popularity.
 
         :return: A list of :class:`Tracks <tidalapi.media.Track>`
         """
         params = {"limit": limit, "offset": offset}
         return cast(
-            List["Track"],
+            list["Track"],
             self.request.map_request(
                 f"artists/{self.id}/toptracks",
                 params=params,
@@ -194,14 +195,14 @@ class Artist:
             ),
         )
 
-    def get_videos(self, limit: Optional[int] = None, offset: int = 0) -> List["Video"]:
+    def get_videos(self, limit: int | None = None, offset: int = 0) -> list["Video"]:
         """Queries tidal for the artists videos.
 
         :return: A list of :class:`Videos <tidalapi.media.Video>`
         """
         params = {"limit": limit, "offset": offset}
         return cast(
-            List["Video"],
+            list["Video"],
             self.request.map_request(
                 f"artists/{self.id}/videos",
                 params=params,
@@ -219,19 +220,19 @@ class Artist:
             str, self.request.request("GET", f"artists/{self.id}/bio").json()["text"]
         )
 
-    def get_similar(self) -> List["Artist"]:
+    def get_similar(self) -> list["Artist"]:
         """Queries TIDAL for similar artists.
 
         :return: A list of :class:`Artists <tidalapi.artist.Artist>`
         """
         return cast(
-            List["Artist"],
+            list["Artist"],
             self.request.map_request(
                 f"artists/{self.id}/similar", parse=self.session.parse_artist
             ),
         )
 
-    def get_radio(self, limit: int = 100) -> List["Track"]:
+    def get_radio(self, limit: int = 100) -> list["Track"]:
         """Queries TIDAL for the artist radio, i.e. a list of tracks similar to this
         artist.
 
@@ -241,7 +242,7 @@ class Artist:
 
         try:
             request = self.request.request(
-                "GET", "artists/%s/radio" % self.id, params=params
+                "GET", f"artists/{self.id}/radio", params=params
             )
         except ObjectNotFound:
             raise MetadataNotAvailable("Track radio not available for this track")
@@ -252,7 +253,7 @@ class Artist:
             json_obj = request.json()
             radio = self.request.map_json(json_obj, parse=self.session.parse_track)
             assert isinstance(radio, list)
-            return cast(List["Track"], radio)
+            return cast(list["Track"], radio)
 
     def get_radio_mix(self) -> mix.Mix:
         """Queries TIDAL for the artist radio, i.e. mix of tracks that are similar to
@@ -263,7 +264,7 @@ class Artist:
             available
         """
         try:
-            request = self.request.request("GET", "artists/%s/mix" % self.id)
+            request = self.request.request("GET", f"artists/{self.id}/mix")
         except ObjectNotFound:
             raise MetadataNotAvailable("Artist radio not available for this artist")
         except TooManyRequests as e:
@@ -273,7 +274,7 @@ class Artist:
             json_obj = request.json()
             return self.session.mix(json_obj.get("id"))
 
-    def items(self) -> List[NoReturn]:
+    def items(self) -> list[NoReturn]:
         """The artist page does not supply any items.
 
         This only exists for symmetry with other model types.
@@ -292,7 +293,7 @@ class Artist:
         Valid resolutions: 160x160, 320x320, 480x480, 750x750
         """
         if dimensions not in [160, 320, 480, 750]:
-            raise ValueError("Invalid resolution {0} x {0}".format(dimensions))
+            raise ValueError(f"Invalid resolution {dimensions} x {dimensions}")
 
         if not self.picture:
             json = self.request.request("GET", f"artists/{self.id}").json()

@@ -21,7 +21,6 @@ from contextlib import suppress
 from json import dumps, loads
 from os import getenv
 from pathlib import Path
-from typing import List, Optional
 
 import keyring
 import keyring.backends
@@ -38,7 +37,7 @@ def session(request):
 
 
 class Credentials(ABC):
-    def load(self, key: str) -> Optional[dict]:
+    def load(self, key: str) -> dict | None:
         """Load secret."""
 
     def save(self, key: str, val: dict) -> None:
@@ -46,7 +45,7 @@ class Credentials(ABC):
 
 
 class EnvCredentials(Credentials):
-    def load(self, key: str) -> Optional[dict]:
+    def load(self, key: str) -> dict | None:
         credentials = {
             "token_type": getenv("TIDAL_TOKEN_TYPE", "Bearer"),
             "access_token": getenv("TIDAL_ACCESS_TOKEN"),
@@ -64,7 +63,7 @@ class EnvCredentials(Credentials):
 
 
 class KeyringCredentials(Credentials):
-    def load(self, key: str) -> Optional[dict]:
+    def load(self, key: str) -> dict | None:
         with suppress(Exception):
             credentials = keyring.get_password(key, key)
             return loads(credentials)
@@ -82,7 +81,7 @@ class CachedCredentials(Credentials):
         self.cache_dir = base_dir / "python-tidal"
         self.cache_dir.mkdir(exist_ok=True)
 
-    def load(self, key: str) -> Optional[dict]:
+    def load(self, key: str) -> dict | None:
         cachef = self.cache_dir / f"{key}.json"
         try:
             return loads(cachef.read_text())
@@ -99,7 +98,7 @@ KEY = "python-tidal"
 
 def get_credential_store(
     datastore_key: str = KEY,
-) -> tuple[List[Credentials], Optional[dict]]:
+) -> tuple[list[Credentials], dict | None]:
     stores = []
     for store in (EnvCredentials, CachedCredentials, KeyringCredentials):
         with suppress(Exception):

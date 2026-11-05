@@ -17,7 +17,7 @@
 """"""
 
 import copy
-from typing import TYPE_CHECKING, Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from tidalapi.types import JsonObj
 
@@ -52,20 +52,20 @@ class Genre:
 
         return copy.copy(self)
 
-    def parse_genres(self, json_obj: List[JsonObj]) -> List["Genre"]:
+    def parse_genres(self, json_obj: list[JsonObj]) -> list["Genre"]:
         return list(map(self.parse_genre, json_obj))
 
-    def get_genres(self) -> List["Genre"]:
+    def get_genres(self) -> list["Genre"]:
         return self.parse_genres(self.requests.request("GET", "genres").json())
 
-    def items(self, model: List[Optional[Any]]) -> List[Optional[Any]]:
+    def items(self, model: list[Any | None]) -> list[Any | None]:
         """Gets the current genre's items of the specified type :param model: The
         tidalapi model you want returned.
 
         See :class:`Genre`
         :return:
         """
-        type_relations: "TypeRelation" = next(
+        type_relations: TypeRelation = next(
             x for x in self.session.type_conversions if x.type == model
         )
         name = type_relations.identifier
@@ -73,6 +73,6 @@ class Genre:
         if getattr(self, name):
             location = f"genres/{self.path}/{name}"
             return cast(
-                List[Optional[Any]], self.requests.map_request(location, parse=parse)
+                list[Any | None], self.requests.map_request(location, parse=parse)
             )
-        raise TypeError("This genre does not contain {0}".format(name))
+        raise TypeError(f"This genre does not contain {name}")
