@@ -26,4 +26,4 @@ jobs:
       - run: poetry env use python
       - run: poetry install
       # Offline tests only, the remaining tests require a TIDAL account
-      - run: poetry run pytest tests/test_backoff.py tests/test_parsing.py tests/test_token_refresh.py
+      - run: poetry run pytest tests/test_backoff.py tests/test_parsing.py tests/test_token_refresh.py tests/test_playlog.py

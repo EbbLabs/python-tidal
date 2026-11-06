@@ -3,6 +3,10 @@
 History
 =======
 
+Unreleased
+----------
+* Added `Session.start_playback` and `Session.report_playback` to measure plays and report them to TIDAL, so they show up in Recently played on all devices and count for recommendations (Fixes #401) - Petru101_
+
 v0.9.0
 ------
 * (BREAKING!) Drop support for python3.10 and older, python 3.11 or newer is now required - tehkillerbee_
