@@ -435,6 +435,9 @@ class Track(Media):
             raise e
         else:
             json_obj = request.json()
+            self.session.playlog.note_stream(
+                self.id, self.session.config.quality, AudioMode.stereo
+            )
             return cast(str, json_obj["urls"][0])
 
     def lyrics(self) -> Lyrics:
@@ -527,7 +530,11 @@ class Track(Media):
             json_obj = request.json()
             stream = self.requests.map_json(json_obj, parse=Stream().parse)
             assert not isinstance(stream, list)
-            return cast("Stream", stream)
+            stream = cast("Stream", stream)
+            self.session.playlog.note_stream(
+                self.id, stream.audio_quality, stream.audio_mode
+            )
+            return stream
 
     @property
     def is_hi_res_lossless(self) -> bool:
