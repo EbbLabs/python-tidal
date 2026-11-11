@@ -361,7 +361,9 @@ class Track(Media):
         if self.available:
             self.access_type = json_obj.get("accessType", "None")
 
-            self.media_metadata_tags = json_obj.get("mediaMetadata", {}).get("tags", {})
+            # mediaMetadata can be null
+            media_metadata = json_obj.get("mediaMetadata") or {}
+            self.media_metadata_tags = media_metadata.get("tags", {})
 
             self.index = json_obj.get("index")
             self.item_uuid = json_obj.get("itemUuid")

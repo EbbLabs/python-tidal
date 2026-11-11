@@ -198,3 +198,35 @@ def test_track_with_album_parses_album_artist(session):
 
     assert track.album.artist is None
     assert track.artist is None
+
+
+def test_available_track_with_null_media_metadata(session):
+    track = session.track().parse_track(
+        track_json(allowStreaming=True, streamReady=True, mediaMetadata=None)
+    )
+
+    assert track.media_metadata_tags == {}
+
+
+def test_track_media_metadata_tags_are_read(session):
+    track = session.track().parse_track(
+        track_json(
+            allowStreaming=True,
+            streamReady=True,
+            mediaMetadata={"tags": ["LOSSLESS", "HIRES_LOSSLESS"]},
+        )
+    )
+
+    assert track.media_metadata_tags == ["LOSSLESS", "HIRES_LOSSLESS"]
+
+
+def test_album_with_null_media_metadata_keeps_default_tags(session):
+    album = session.album().parse(album_json(mediaMetadata=None))
+
+    assert album.media_metadata_tags == [""]
+
+
+def test_album_media_metadata_tags_are_read(session):
+    album = session.album().parse(album_json(mediaMetadata={"tags": ["LOSSLESS"]}))
+
+    assert album.media_metadata_tags == ["LOSSLESS"]

@@ -139,8 +139,10 @@ class Album:
         self.audio_quality = json_obj.get("audioQuality")
         self.audio_modes = json_obj.get("audioModes")
 
-        if "mediaMetadata" in json_obj:
-            self.media_metadata_tags = json_obj.get("mediaMetadata")["tags"]
+        # mediaMetadata can be null
+        media_metadata = json_obj.get("mediaMetadata") or {}
+        if "tags" in media_metadata:
+            self.media_metadata_tags = media_metadata["tags"]
 
         self.artist = artist
         self.artists = artists
