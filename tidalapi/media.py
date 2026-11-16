@@ -821,32 +821,22 @@ class DashInfo:
 
     @staticmethod
     def get_urls(mpd) -> list[str]:
-        # min segments count; i.e. .initialization + the very first of .media;
-        # See https://developers.broadpeak.io/docs/foundations-dash
-        segments_count = 1 + 1
-
-        for s in (
-            mpd.periods[0]
-            .adaptation_sets[0]
-            .representations[0]
-            .segment_templates[0]
-            .segment_timelines[0]
-            .Ss
-        ):
-            segments_count += s.r if s.r else 1
-
-        # Populate segment urls.
         segment_template = (
-            mpd.periods[0]
-            .adaptation_sets[0]
-            .representations[0]
-            .segment_templates[0]
-            .media
+            mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
         )
-        stream_urls: list[str] = []
+        # Each S element is one segment followed by r repeats of it (r defaults to 0)
+        # See https://developers.broadpeak.io/docs/foundations-dash
+        segments_count = sum(
+            (s.r or 0) + 1 for s in segment_template.segment_timelines[0].Ss
+        )
+        start_number = segment_template.start_number
+        if start_number is None:
+            start_number = 1
 
-        for index in range(segments_count):
-            stream_urls.append(segment_template.replace("$Number$", str(index)))
+        # The initialization segment, then every media segment
+        stream_urls: list[str] = [segment_template.initialization]
+        for number in range(start_number, start_number + segments_count):
+            stream_urls.append(segment_template.media.replace("$Number$", str(number)))
 
         return stream_urls
 

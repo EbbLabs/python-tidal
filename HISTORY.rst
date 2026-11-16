@@ -23,6 +23,7 @@ v0.9.0
 * Bugfix: Parsing tracks and albums no longer fails when TIDAL returns no or empty artist information - tehkillerbee_
 * Parsed `Track` flags (`pay_to_stream`, `premium_streaming_only`, `editable`, `upload`, `spotlighted`) are now `False` instead of `None` when TIDAL omits them, and `url` is an empty string - tehkillerbee_
 * Bugfix: `load_oauth_session` accepts `expiry_time` as an ISO 8601 string. Applications that store it as text (e.g. High Tide) would otherwise fail on every request, now that the expiry time is checked before each request - Petru101_
+* Bugfix: DASH stream URLs now follow the manifest's `SegmentTimeline` (each `S` is `r + 1` segments). Short tracks no longer get a segment that does not exist (HTTP 400), and timelines with several repeated elements no longer lose segments - niraami_
 
 v0.8.11
 --------
@@ -326,4 +327,4 @@ v0.6.2
 .. _semohr: https://github.com/semohr
 .. _rafrombrc: https://github.com/rafrombrc
 .. _Petru101: https://github.com/Petru101
-
+.. _niraami: https://github.com/niraami

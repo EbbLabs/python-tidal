@@ -12,11 +12,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Offline tests for parsing incomplete track and album metadata."""
+"""Offline tests for parsing incomplete track and album metadata, and stream
+manifests."""
 
 import pytest
 
 import tidalapi
+from tidalapi.media import DashInfo
 
 
 @pytest.fixture
@@ -198,3 +200,40 @@ def test_track_with_album_parses_album_artist(session):
 
     assert track.album.artist is None
     assert track.artist is None
+
+
+def mpd_xml(timeline):
+    """A DASH manifest in the shape TIDAL serves, with the given SegmentTimeline."""
+    return (
+        "<?xml version='1.0' encoding='UTF-8'?>"
+        '<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" '
+        'mediaPresentationDuration="PT4.033S"><Period id="0">'
+        '<AdaptationSet id="0" contentType="audio" mimeType="audio/mp4">'
+        '<Representation id="FLAC_HIRES,44100,24" codecs="flac" bandwidth="1133543" '
+        'audioSamplingRate="44100"><SegmentTemplate timescale="44100" '
+        'initialization="https://cdn/0.mp4?token=t" '
+        'media="https://cdn/$Number$.mp4?token=t" startNumber="1">'
+        f"<SegmentTimeline>{timeline}</SegmentTimeline></SegmentTemplate>"
+        "</Representation></AdaptationSet></Period></MPD>"
+    )
+
+
+@pytest.mark.parametrize(
+    "timeline, numbers",
+    [
+        # The usual timeline: a repeated segment and a shorter last one
+        ('<S d="176128" r="2"/><S d="1730"/>', [1, 2, 3, 4]),
+        # A single element
+        ('<S d="176128" r="3"/>', [1, 2, 3, 4]),
+        # A short track: no element repeats (TIDAL track 534096006)
+        ('<S d="176128"/><S d="1730"/>', [1, 2]),
+        # Two repeated elements
+        ('<S d="176128" r="2"/><S d="88064" r="1"/><S d="1730"/>', [1, 2, 3, 4, 5, 6]),
+    ],
+)
+def test_dash_urls_list_each_segment_of_the_timeline(timeline, numbers):
+    urls = DashInfo.from_mpd(mpd_xml(timeline)).urls
+
+    assert urls == ["https://cdn/0.mp4?token=t"] + [
+        f"https://cdn/{number}.mp4?token=t" for number in numbers
+    ]
