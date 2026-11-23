@@ -362,7 +362,21 @@ class HorizontalList(SimpleList):
 
 @PageCategoryV2.register_subclass("HORIZONTAL_LIST_WITH_CONTEXT")
 class HorizontalListWithContext(HorizontalList):
-    """A horizontal list of items with additional context."""
+    """A horizontal list of items with additional context.
+
+    The context is the item the list is based on, e.g. the album in "Because you
+    listened to <album>". It is parsed into :attr:`header`.
+    """
+
+    def __init__(self, session: "Session"):
+        super().__init__(session)
+        self.header: Any = None
+
+    def parse(self, json_obj: "JsonObj"):
+        super().parse(json_obj)
+        header = json_obj.get("header")
+        self.header = self.get_item(header) if header else None
+        return self
 
 
 @PageCategoryV2.register_subclass("TRACK_LIST")
